@@ -6,4 +6,5 @@
   .segment "CODE"
 
   .import calc
+  .import sub
 .endif
