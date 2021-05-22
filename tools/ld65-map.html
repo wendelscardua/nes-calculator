@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+  body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      margin: auto;
+      position: relative;
+      width: 1600px;
+  }
+  form {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+  }
+  .node {
+      border: solid 2px white;
+      font: 16px;
+      line-height: 18px;
+      overflow: hidden;
+      position: absolute;
+      padding: 8px;
+  }
+</style>
+<h1>ld65 map</h1>
+<form>
+  <label><input type="radio" name="mode" value="pct" checked> Category %</label>
+  <label><input type="radio" name="mode" value="size"> Size</label>
+</form>
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+  'use strict';
+
+  const margin = {top: 10, right: 10, bottom: 10, left: 10},
+        width = 1600 - margin.left - margin.right,
+        height = 800 - margin.top - margin.bottom,
+        color = d3.scaleOrdinal().range(d3.schemeCategory10);
+
+  const treemap = d3.treemap().size([width, height]);
+
+  const div = d3.select("body").append("div")
+        .style("position", "relative")
+        .style("width", (width + margin.left + margin.right) + "px")
+        .style("height", (height + margin.top + margin.bottom) + "px")
+        .style("left", margin.left + "px")
+        .style("top", margin.top + "px");
+
+  d3.json("ld65-map.json", function(error, data) {
+    if (error) throw error;
+
+    const root = d3.hierarchy(data, (d) => d.children)
+          .sum((d) => d.value);
+
+    const tree = treemap(root);
+
+    const node = div.datum(root).selectAll(".node")
+          .data(tree.leaves())
+          .enter().append("div")
+          .attr("class", "node")
+          .style("left", (d) => d.x0 + "px")
+          .style("top", (d) => d.y0 + "px")
+          .style("width", (d) => Math.max(0, d.x1 - d.x0 - 1) + "px")
+          .style("height", (d) => Math.max(0, d.y1 - d.y0  - 1) + "px")
+          .style("background", (d) => color(d.data.group))
+          .html((d) => d.data.subgroup ? `${d.data.subgroup}<br>${d.data.name} (${d.data.size})` : `${d.data.name} (${d.data.size})` );
+    d3.selectAll("input").on("change", function change() {
+    const value = this.value === "size"
+        ? (d) => { return d.size; }
+        : (d) => { return d.value; };
+
+    const newRoot = d3.hierarchy(data, (d) => d.children)
+      .sum(value);
+
+      node.data(treemap(newRoot).leaves())
+        .transition()
+        .duration(1500)
+        .style("left", (d) => d.x0 + "px")
+        .style("top", (d) => d.y0 + "px")
+        .style("width", (d) => Math.max(0, d.x1 - d.x0 - 1) + "px")
+        .style("height", (d) => Math.max(0, d.y1 - d.y0  - 1) + "px")
+    });
+  });
+
+</script>

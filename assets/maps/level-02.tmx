@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.4" tiledversion="1.4.3" orientation="orthogonal" renderorder="right-down" width="16" height="15" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="19">
+ <tileset firstgid="1" source="metatiles.tsx"/>
+ <layer id="1" name="Map" width="16" height="15" locked="1">
+  <data encoding="csv">
+6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+6,6,6,22,22,22,6,6,6,6,6,6,6,6,6,6,
+6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+6,6,6,1,1,1,1,1,1,1,1,1,1,1,6,6,
+6,6,6,1,2,2,2,2,2,2,2,2,2,1,6,6,
+6,6,6,1,2,2,2,2,2,2,2,2,2,1,6,6,
+6,6,6,1,2,2,2,2,2,2,2,2,2,1,6,6,
+6,6,6,1,2,2,2,2,2,2,2,2,2,1,6,6,
+6,6,6,1,2,2,2,2,2,2,2,3,2,1,6,6,
+6,6,6,1,2,2,2,2,2,2,2,2,2,1,6,6,
+6,6,6,1,1,1,1,1,1,1,1,1,1,1,6,6,
+6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
+</data>
+ </layer>
+ <objectgroup id="3" name="coordinates" locked="1">
+  <object id="12" name="strawberry" x="129.75" y="98.8333" width="10" height="10.25"/>
+  <object id="13" name="turtle" type="U" x="131.833" y="147.583" width="8" height="8.25"/>
+  <object id="14" name="strawberry" x="84.1667" y="147.917" width="6.25" height="7.75"/>
+  <object id="15" name="strawberry" x="116.75" y="147.667" width="5.5" height="6.5"/>
+  <object id="18" name="commands" type="GGG" x="51.75" y="35" width="8" height="9.5"/>
+ </objectgroup>
+</map>

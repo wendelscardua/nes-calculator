@@ -1,0 +1,12 @@
+*.o
+*.nes
+*.dbg
+*.nsf
+*.tiled-session
+map.txt
+data/*.inc
+tools/ld65-map.json
+soundtrack.txt
+soundtrack.s
+sfx.s
+assets/maps/*.inc
