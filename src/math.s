@@ -182,29 +182,29 @@ wreglen = 16
              sub-1, \
              mul-1, \
              div-1, \
-             sqr-1, \
+             sqrt-1, \
              inv-1, \
              int-1, \
-             fra-1, \
+             frac-1, \
              abs-1, \
              chs-1, \
              sin-1, \
              cos-1, \
              tan-1, \
              csc-1, \
-             sec-1, \
+             sec_-1, \
              cot-1, \
-             asi-1, \
-             aco-1, \
-             ata-1, \
-             acs-1, \
-             ase-1, \
-             aco-1, \
-             log-1, \
+             asin-1, \
+             acos-1, \
+             atan-1, \
+             acsc-1, \
+             asec-1, \
+             acot-1, \
+             loge-1, \
              exp-1, \
-             sin-1, \
-             cos-1, \
-             tan-1, \
+             sinh-1, \
+             cosh-1, \
+             tanh-1, \
              csch-1, \
              sech-1, \
              coth-1, \
@@ -233,13 +233,16 @@ jtbl_h: .hibytes jtbl
 ;    sta pctr
 ;    lda <kcos       ; setup pointer to coefficient list
 ;    sta pptr
-;    lda >kcos
+;    lda #>kcos
 ;    sta pptr+1
 ;    jsr poly        ; and go.
 ;    brk
 
 
 .segment "ZEROPAGE"
+
+.export w1, w2, w3, w4
+
 ra: .res 16              ; These registers are for mantissa operations.
 rb: .res 16
 rc: .res 16
@@ -258,6 +261,7 @@ reg2: .res 8
 reg3: .res 8
 reg4: .res 8
 
+.segment "CODE"
 ;
 ;   main floating point math package
 ;
@@ -266,20 +270,23 @@ reg4: .res 8
   lda w2          ; perform subtraction by changing sign
   eor #$80        ;  of second number and adding.
   sta w2
-add:
-  ; sed!!!
+  ; XXX: leak to add
+.endproc
+
+.proc add
+  sed
   lda w1+2        ; filter out case where one number is zero.
   bne add1
-  lda <w2
-  ldy >w2
-  ldx #w3         ; this convention references the low byte.
+  lda #<w2
+  ldy #>w2
+  ldx #<w3         ; this convention references the low byte.
   jmp copy2w      ; w1 is zero -- return with w2 (which may also be zero).
 add1:
   lda w2+2
   bne add2
-  lda <w1
-  ldy >w1
-  ldx #w3
+  lda #<w1
+  ldy #>w1
+  ldx #<w3
   jmp copy2w      ; w2 is zero -- return with w1 (which won't be zero).
   ;
   ;   At this point, additions and subtractions involving '0.0' have
@@ -314,14 +321,14 @@ est2:
   lda tmp1
   beq est3
 est2a:
-  lda <w1       ; e1 >> e2
-  ldy >w1         ; just copy e1 to w3...
-  ldx #w3
+  lda #<w1       ; e1 #>> e2
+  ldy #>w1         ; just copy e1 to w3...
+  ldx #<w3
   jmp copy2w      ; ...and exit.
 est3:
   lda tmp2
   cmp #$12
-  bcs est2a       ; e1 >> e2
+  bcs est2a       ; e1 #>> e2
   lda #0         ; we now know that a subtraction will take place.
   sta dadj        ; initialize decimal adjust.
   jsr w12rab      ; put 'w1' and 'w2' into 'ra' and 'rb' respectively.
@@ -339,7 +346,7 @@ est4a:
   jsr rbtow3      ; ...of this subroutine.
   rts
 sbpe:
-  jsr diffexp     ; carry e1 >= e2.
+  jsr diffexp     ; carry e1 #>= e2.
   bcs sbp1
   jsr xw12
 sbp1:
@@ -348,7 +355,7 @@ sbp1:
   bne est2a
   jmp est3
 sbne:
-  jsr diffexp     ; exponent diff: tmp1(hi),tmp2(lo), carry: e1 >= e2.
+  jsr diffexp     ; exponent diff: tmp1(hi),tmp2(lo), carry: e1 #>= e2.
   bcc sbp1
   jsr xw12
   lda tmp1
@@ -375,17 +382,17 @@ et1:
 et2:
   jsr sumexp     ; add the exponents to determine the decimal
   ;  point adjustment to be applied to w2.
-  lda tmp1        ; if tmp1 <> 0 the sum exceeds number of digits
+  lda tmp1        ; if tmp1 #<> 0 the sum exceeds number of digits
   beq et3
 et2a:
-  lda <w1
-  ldy >w1         ; w1 >> w2. no need to add, just copy to w3...
-  ldx #w3
+  lda #<w1
+  ldy #>w1         ; w1 #>> w2. no need to add, just copy to w3...
+  ldx #<w3
   jmp copy2w      ; ...and exit
 et3:
   lda tmp2
   cmp #$12
-  bcs et2a        ; w1 >> w2. copy and exit.
+  bcs et2a        ; w1 #>> w2. copy and exit.
   lda #0          ; Summary: w1 is larger than w2, decimal adj in tmp2.
   sta dadj        ; initialize adjustments due to potential overflow.
   jsr w12rab      ; copy w1 and w2 to working regs with decimal adj.
@@ -396,16 +403,16 @@ et3:
   jsr rbtow3      ; copy result (rb) to w3.
   rts
 adpe:
-  jsr diffexp     ; exponent diff: 'a'(hi), 'x'(lo), carry: e1 >= e2.
+  jsr diffexp     ; exponent diff: 'a'(hi), 'x'(lo), carry: e1 #>= e2.
   bcs adp1
   jsr xw12
 adp1:
   lda tmp1
   cmp #0
-  bne et2a        ; e1 >> e2, just copy w1 to w3 and exit.
+  bne et2a        ; e1 #>> e2, just copy w1 to w3 and exit.
   jmp et3
 adne:
-  jsr diffexp     ; exponent diff: tmp1(hi), tmp2(lo), carry: e1 >= e2.
+  jsr diffexp     ; exponent diff: tmp1(hi), tmp2(lo), carry: e1 #>= e2.
   bcc adp1
   jsr xw12
   jmp adp1
@@ -431,12 +438,12 @@ adne:
 
 .proc diffexp
   lda w1      ; return absolute difference of exponents of w1 and w2.
-  and #$0f        ; value is in tmp1(hi),tmp2(lo). carry set if e1 >= e2,
-  sta tmp1        ;  clear if e1 < e2.
+  and #$0f        ; value is in tmp1(hi),tmp2(lo). carry set if e1 #>= e2,
+  sta tmp1        ;  clear if e1 #< e2.
   lda w2
   and #$0f
   sta tmp2
-  sec             ; trial difference assuming e1 >= e2
+  sec             ; trial difference assuming e1 #>= e2
   lda w1+1        ; (It's just as easy to go ahead and perform the
   sbc w2+1        ;  subtraction as it is to perform a multibyte
   tax             ;  compare. If the numbers were properly ordered,
@@ -461,7 +468,7 @@ adne:
 ;   adjustment has been previously placed in 'tmp2'.
 ;
 .proc w12rab
-  ldy #wreglen*2-1 ;31
+  ldy #<wreglen*2-1 ;31
   lda #0
 clrlp:           ; clear ra, rb
   sta ra,y
@@ -485,7 +492,7 @@ clrlp:           ; clear ra, rb
   lda tmp2
   lsr         ; set carry if decimal adjustment is odd...
   bcc cxp1
-  ldx #wreglen-3  ; ...and shift rb left one digit to normalize.
+  ldx #<wreglen-3  ; ...and shift rb left one digit to normalize.
   lda #0
 : ldy rb+2,x
   ora tlh,y
@@ -504,7 +511,7 @@ cxp1:
   sty ptr1+1
   sta ptr1
   stx ptr2
-  lda #w1/256    ; get page used for working registers
+  lda #>w1    ; get page used for working registers
   sta ptr2+1
   ldy #7
 : lda (ptr1),y
@@ -570,7 +577,7 @@ sabx:
   beq :+
   jsr rotrgtb     ; ...and normalize, if needed...
   clc
-  lda dadj        ; assume dadj < 99 but (possibly) > 9
+  lda dadj        ; assume dadj #< 99 but (possibly) #> 9
   adc #1
   sta dadj        ; ... then increment decimal adjustment.
 : rts
@@ -595,7 +602,7 @@ rbta:
   lda w1
   and #$0f
   sta w3
-  bit tmp1        ; adjust exponent, assume dadj < 99
+  bit tmp1        ; adjust exponent, assume dadj #< 99
   bvc rbtw2       ; add adjustment to exponent
   sec
   lda w3+1
@@ -645,8 +652,9 @@ rbtx:
   and #$cf
   sta w3
   rts
+.endproc
 
-xw12:
+.proc xw12
   ldy #7         ; exchange contents of w1 with w2.
 : ldx w1,y
   lda w2,y
@@ -788,7 +796,7 @@ xw12:
   eor w2
   and #$40
   beq ml1s
-  jsr diffexp    ; carry set: e1 >= e2
+  jsr diffexp    ; carry set: e1 #>= e2
   bcs :+
   lda w2
   bcc xsgn
@@ -848,10 +856,10 @@ mzro:
   rts
 .endproc
 
-.proc mktbl:
-  lda <mtbl     ; create table of multiples of multiplier
+.proc mktbl
+  lda #<mtbl     ; create table of multiples of multiplier
   sta mptr
-  lda >mtbl
+  lda #>mtbl
   sta mptr+1
   sta ptr1+1
   sta ptr2+1
@@ -1126,15 +1134,14 @@ od4:
   lda w1
   eor w2
   and #$40        ; compare exponent signs
-beq:
-  exd
+  beq exd
   jsr sumexp
   lda w1
   jmp dexpadj
 exd:
   jsr diffexp     ; exponent signs are the same
   lda w2
-  bcs dexpadj     ; carry: divisor exp >= dividend exp (e1 >= e2)
+  bcs dexpadj     ; carry: divisor exp #>= dividend exp (e1 #>= e2)
   eor #$40
 dexpadj:
   and #$40
@@ -1237,7 +1244,8 @@ odx:
   cpx mtbl+$11
   bcs dsub
 : dec ctr1        ; must be zero
-  and rb+15,$f0
+  lda rb+15
+  and #$f0
   jmp shftlft
 dsub:
   lda rb+15          ; save current digit in result register
@@ -1265,7 +1273,10 @@ sulp:
   sta rb,y
   dey
   bpl :-
-shftlft:
+  ; XXX: leak to shftlft
+.endproc
+
+.proc shftlft
   ldx #15      ; shift remainder register in rb left one digit.
   lda #0
 : ldy rb,x
@@ -1505,7 +1516,7 @@ pl0:
 pl1:
   jsr argtow1       ; get argument ...
   jsr w3tow2      ; ... and current result
-  jsr mul         ; w3 <- product
+  jsr mul         ; w3 #<- product
   cld
   clc
   lda pptr        ; bump coefficient pointer to next value
@@ -1558,33 +1569,33 @@ w32a:
 ;
 ;   w3 = secant(w1)
 ;
-.proc sec
+.proc sec_
   jsr tan
-  lda <w3
-  ldy >w3
-  ldx #w4
+  lda #<w3
+  ldy #>w3
+  ldx #<w4
   jsr copy2w      ; save tangent for (possible) later use
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr mul         ; w3 contains tan^2
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w     ; w3 = 1 + tan^2
   jsr add
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr sqrt        ; w3 = sqrt(1 + tan^2), w4 = tan
   lda qdrnt
@@ -1602,14 +1613,14 @@ w32a:
 ;   sin -- calculates sine function:  sin(x) = tan(x)/sec(x)
 ;
 .proc sin
-  jsr sec
-  lda <w3
-  ldy >w3
-  ldx #w2
+  jsr sec_
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <w4
-  ldy >w4
-  ldx #w1
+  lda #<w4
+  ldy #>w4
+  ldx #<w1
   jsr copy2w
   jsr div
   lda w3
@@ -1626,14 +1637,14 @@ w32a:
 ;   cos -- cos(x) = 1/sec(x)
 ;
 .proc cos
-  jsr sec
-  lda <w3
-  ldy >w3
-  ldx #w2
+  jsr sec_
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
   rts
@@ -1654,14 +1665,14 @@ w32a:
 ;      . divide the argument by 2pi,
 ;      . discard the integer part of the result,
 ;      . multiply the fractional part by 2pi.
-;   2. If the result < 0 add 2pi so reference angle is positive.
+;   2. If the result #< 0 add 2pi so reference angle is positive.
 ;   3. Find and set quadrant and tnsgn, quadrant is used by sin, cos, etc.
-;   4. If arg > pi subtract pi
-;   5. if arg > pi/2 subtract pi
+;   4. If arg #> pi subtract pi
+;   5. if arg #> pi/2 subtract pi
 ;   6. The scaled argument has the same tangent as the original argument.
 ;      It is now in quadrant I or IV.
 ;      . take the absolute value of the argument.
-;   7. The argument is now in the range 0 <= arg <= pi/2.
+;   7. The argument is now in the range 0 #<= arg #<= pi/2.
 ;      . set 'cotflg' = 0
 ;   8. If the argument exceeds pi/4,
 ;      . subtract argument from pi
@@ -1680,10 +1691,10 @@ tan0:
   sed
   lda #0
   sta tnsgn
-  jsr tanscale    ; reduce argument to range: 0 <= arg <= pi/4
-  lda <w3         ; move scaled argument to w1
-  ldy >w3
-  ldx #w1
+  jsr tanscale    ; reduce argument to range: 0 #<= arg #<= pi/4
+  lda #<w3         ; move scaled argument to w1
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   lda w3+2
   bne :+
@@ -1694,13 +1705,13 @@ tan0:
   sta w3
   lda cotflg
   beq :+
-  lda <unit       ; take reciprocal if cotangent
-  ldy >unit
-  ldx #w1
+  lda #<unit       ; take reciprocal if cotangent
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr div
 : rts
@@ -1708,18 +1719,18 @@ tan0:
 
 .proc cot
   lda #1
-  jmp tan0
+  jmp tan::tan0
 .endproc
 
 .proc csc
   jsr sin
-  lda <w3
-  ldy > w3
-  ldx #w2
+  lda #<w3
+  ldy #> w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jmp div
 .endproc
@@ -1757,9 +1768,9 @@ tn0xb:
   sta ra,x
   dex
   bpl tn0xb
-  lda <kxatn      ; initialize arctangent table pointer
+  lda #<kxatn      ; initialize arctangent table pointer
   sta ptr1
-  lda >kxatn
+  lda #>kxatn
   sta ptr1+1
   ;
   lda w1+1
@@ -1794,7 +1805,7 @@ tn00a:
   ;       (00 0D 0D 0D 0D 0D ...)
   ;
   ;   Note that the first digit is zero because the argument
-  ;   scaling reduces the argument below pi/4 < 1.0.
+  ;   scaling reduces the argument below pi/4 #< 1.0.
   ;   now call routine to create fixed point tangent
   ;
   jsr tnpmul
@@ -1833,7 +1844,8 @@ t0a3:
   dex
   bpl t0a3
   rts
-t0b ldx #5
+t0b:
+  ldx #5
 t0b1:
   lda ra+2,x     ; move mantissa to 'w1'
   sta w1+2,x
@@ -2034,13 +2046,13 @@ x2z1:
 ;
 .proc acos
   jsr asin
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <pio2
-  ldy >pio2
-  ldx #w1
+  lda #<pio2
+  ldy #>pio2
+  ldx #<w1
   jsr copy2w
   jsr sub
   rts
@@ -2057,30 +2069,30 @@ x2z1:
   lda w1
   and #$80        ; save argument sign (append to result)
   sta sinflg
-  lda <w1          ; make argument positive
+  lda #<w1          ; make argument positive
   and #$7f
   sta w1
-  lda <w1        ; save to temporary register
+  lda #<w1        ; save to temporary register
   sta ptr1
-  lda >w1
+  lda #>w1
   sta ptr1+1
-  lda <reg1
+  lda #<reg1
   sta ptr2
-  lda >reg1
+  lda #>reg1
   sta ptr2+1
   jsr copyreg
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
   jsr mul         ; form arg^2
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr sub         ; form 1 - arg^2
   ;
@@ -2093,31 +2105,31 @@ x2z1:
   beq argzr
   lda w3
   bpl argpls
-  jmp rangerr     ; argument > 1.0, return with error
+  jmp rangerr     ; argument #> 1.0, return with error
 argzr:
-  lda <pio2
-  ldy >pio2
-  ldx #w3
+  lda #<pio2
+  ldy #>pio2
+  ldx #<w3
   jsr copy2w
   jmp fxsgn
 argpls:
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr sqrt        ; form ы 1 - arg^2
-  lda <reg1
-  ldy >reg1
-  ldx #w1
+  lda #<reg1
+  ldy #>reg1
+  ldx #<w1
   jsr copy2w
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr div         ; form arg / ы 1 - arg^2
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr atan
 
@@ -2134,12 +2146,12 @@ fxsgn:
 ;   1. Test argument sign,
 ;       . save sign, make argument positive.
 ;   2. Test size of argument,
-;       . if argument < 1e-6 correct sign and return
+;       . if argument #< 1e-6 correct sign and return
 ;         argument in w3.
-;       . if argument > 1.0, set cotflg replace argument
+;       . if argument #> 1.0, set cotflg replace argument
 ;         with its reciprocal.
 ;       . else clear cotflg.
-;   3. Compute arctangent of argument. (0 <= angle <= pi/4).
+;   3. Compute arctangent of argument. (0 #<= angle #<= pi/4).
 ;   4. If cotflg, subtract from pi/2.
 ;   5. Correct sign.
 ;   6. Return result in w3.
@@ -2158,12 +2170,12 @@ fxsgn:
   sta w1
 : bvs argchk
   jsr inv
-  lda #w3
+  lda #<w3
   ldy #>w3
-  ldx #w1
+  ldx #<w1
   jsr copy2w
   inc cotflg  ; argument is inverted and cotflg is set
-argchk:          ; here, 0 <= arg <= 1.0
+argchk:          ; here, 0 #<= arg #<= 1.0
   lda w1
   and #$0f
   bne toosml
@@ -2173,19 +2185,19 @@ argchk:          ; here, 0 <= arg <= 1.0
 toosml:
   lda #0   ; argument is too small to need computation
   cmp cotflg
-  beq tsx
-  lda #pio2
+  beq tsx_
+  lda #<pio2
   ldy #>pio2
-  ldx #w2
+  ldx #<w2
   jsr copy2w
   jsr div
-tsx:
+tsx_:
   lda tnsgn
   ora w1
   sta w1
-  lda #w1
+  lda #<w1
   ldy #>w1
-  ldx #w3
+  ldx #<w3
   jsr copy2w
   rts
 argok:
@@ -2230,11 +2242,11 @@ atn1:
   lda #$10        ; 'ra' and 'rb' are now initialized
   sta rb+2
   ;
-  ;   ra = y2 = arg (0 < arg < pi/4)
+  ;   ra = y2 = arg (0 #< arg #< pi/4)
   ;   rb = x2 = 1.0
   ;
   ;   1. initialize pseudo-quotient digit counter and index
-  ;       ctr3 <- index = 0, re used for pq
+  ;       ctr3 #<- index = 0, re used for pq
   ;   2. outer loop
   ;      (A) inner loop
   ;        y2 -> y1   (rc)
@@ -2242,7 +2254,7 @@ atn1:
   ;        y2 shr index (10^j)  (1st pass, j=0, no shift required)
   ;        x2 shr index (10^j)    "   "     "        "      "
   ;        y2 = y2 - x1
-  ;        if y2 < 0 goto (B)
+  ;        if y2 #< 0 goto (B)
   ;        x2 = x2 + y1
   ;        re[index]++
   ;        goto (A)
@@ -2329,7 +2341,7 @@ rstr:
   dex
   bpl :-
   dec bctr
-  bne :-1
+  bne :-- ; XXX: was @B1, check what it means
 atnres:
   ldx #5
 : lda ra+2,x
@@ -2353,7 +2365,7 @@ atnres:
   ;           add current table entry to running sum in 'ra',
   ;       B. increment index (ctr3) and bump table pointer
   ;           to next entry.
-  ;       C. if index < 7, goto A.
+  ;       C. if index #< 7, goto A.
   ;
   ldx #15
   lda #0
@@ -2376,8 +2388,8 @@ atnres:
   sta ra+2,x
   dex
   dey
-  bpl @b
-  lda #w1+1
+  bpl :-
+  lda #<w1+1
   and #1
   beq atnpm
   ldx #7          ; shift right one digit
@@ -2390,9 +2402,9 @@ atnres:
   bpl :-
   sta ra+2
 atnpm:
-  lda <kxatn ; setup table point
+  lda #<kxatn ; setup table point
   sta ptr1
-  lda >kxatn
+  lda #>kxatn
   sta ptr1+1
   ldx #0      ; initialize pseudo-quotient index
   stx ctr3
@@ -2406,7 +2418,7 @@ apmlp:
   adc (ptr1),y
   sta ra+2,y
   dey
-  bpl @b
+  bpl :-
   bmi apmlp
 atnxtd:
   inc ctr3
@@ -2448,13 +2460,13 @@ atn03:
   bpl :-
   lda cotflg
   beq  atnx
-  lda <pio2
-  ldy >pio2
-  ldx #w1
+  lda #<pio2
+  ldy #>pio2
+  ldx #<w1
   jsr copy2w
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr sub
 atnx:
@@ -2470,13 +2482,13 @@ atnx:
 ;   w3 = acsc(w1)
 ;
 .proc acsc
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
   jmp asin
@@ -2488,13 +2500,13 @@ atnx:
 ;   w3 = asec(w1)
 ;
 .proc asec
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
   jmp acos
@@ -2506,13 +2518,13 @@ atnx:
 ;   w3 = acot(w1)
 ;
 .proc acot
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
   jmp atan
@@ -2538,7 +2550,7 @@ atnx:
   dex
   bpl :-
   lda w1          ; if argument is near unity, use series approximation
-  bne :+          ;  9.9 e-1 < arg < 1.01 e0
+  bne :+          ;  9.9 e-1 #< arg #< 1.01 e0
   lda w1+1
   bne :+
   lda w1+2
@@ -2547,9 +2559,9 @@ atnx:
   ;
   ;   argument is near unity. test for series solution
   ;
-  lda <unit
-  ldy >unit
-  ldx #w2
+  lda #<unit
+  ldy #>unit
+  ldx #<w2
   jsr copy2w
   jsr sub
   lda w3+2
@@ -2563,11 +2575,11 @@ atnx:
   bcc lnargrst
   jmp lnser
 lnargrst:
-  lda <reg1
-  ldy >reg1
-  ldx #w1
+  lda #<reg1
+  ldy #>reg1
+  ldx #<w1
   jsr copy2w
-: jsr clr_r       ; clear all workspace regs
+  jsr clr_r       ; clear all workspace regs
   ldx #5          ; copy mantissa to 'ra'
 : lda w1+2,x
   sta ra+2,x
@@ -2615,9 +2627,9 @@ lnlp0:
   ;
   ;   pseudo-multiply
   ;
-  lda <kxlog     ; set pointer to table of logs
+  lda #<kxlog     ; set pointer to table of logs
   sta ptr1
-  lda >kxlog
+  lda #>kxlog
   sta ptr1+1
   lda #0          ; initialize counters
   sta ctr1
@@ -2672,18 +2684,18 @@ ln2fp:
   sta reg2
 :
   jsr exp2fp
-  lda <unit
-  ldy >unit
-  ldx #w2
+  lda #<unit
+  ldy #>unit
+  ldx #<w2
   jsr copy2w
   jsr add
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <ln10
-  ldy >ln10
-  ldx #w2
+  lda #<ln10
+  ldy #>ln10
+  ldx #<w2
   jsr copy2w
   jsr mul
   ldx #7
@@ -2691,9 +2703,9 @@ ln2fp:
   sta w1,x
   dex
   bpl :-
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr add
   rts
@@ -2860,9 +2872,9 @@ srcx:
 ;            enter with (arg - 1) in 'w3'.
 ;
 .proc lnser
-  lda <kln
+  lda #<kln
   sta ptr3
-  lda >kln
+  lda #>kln
   sta ptr3+1
   lda #3
   sta ctr1
@@ -2931,8 +2943,8 @@ lnsrx:
 ;   the caller.
 ;
 ;   This implementation takes the mantissa and treats it as if
-;   it were in the range: 0.1 <= m <= 0.99999.... instead of
-;   1.0 <= m <= 9.99999......
+;   it were in the range: 0.1 #<= m #<= 0.99999.... instead of
+;   1.0 #<= m #<= 9.99999......
 ;
 ;   The algorithm works by finding a pseudo-quotient from the
 ;   mantissa using a table of natural logs of 2, 1.1, 1.01, 1.001,
@@ -2958,9 +2970,9 @@ xpre:
 : lda w1+2
   bne :+
 xrt1:
-  lda <unit
-  ldy >unit
-  ldx #w3
+  lda #<unit
+  ldy #>unit
+  ldx #<w3
   jmp copy2w
 : bit w1
   bpl :+
@@ -2976,7 +2988,7 @@ xrt1:
   lda w1+1
   cmp #$12
   bcs xrt1
-  bcc :+1
+  bcc :++ ; XXX: was @F1, check what it means
 : lda w1+1
   cmp #4
   bcs xpre
@@ -2985,36 +2997,36 @@ xrt1:
   lda w1+2
   cmp #$23
   bcs xpre
-: lda <iln10      ; form arg/ln10
-  ldy >iln10
-  ldx #w2
+: lda #<iln10      ; form arg/ln10
+  ldy #>iln10
+  ldx #<w2
   jsr copy2w
   jsr mul
-  lda <w3
-  ldy >w3
+  lda #<w3
+  ldy #>w3
   ldx #reg1
   jsr copy2w      ; save backup copy of arg/ln10 in 'reg1'
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr int
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <w3
-  ldy >w3
+  lda #<w3
+  ldy #>w3
   ldx #reg2       ; save power of 10 (exponent) in 'reg2'
   jsr copy2w
   jsr sub
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <ln10
-  ldy >ln10
-  ldx #w2
+  lda #<ln10
+  ldy #>ln10
+  ldx #<w2
   jsr copy2w
   jsr mul
   lda #0
@@ -3052,13 +3064,13 @@ xxp:
   sta w3+1
   bit expflg
   bpl :+
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
 :
@@ -3086,7 +3098,7 @@ xxp:
   lda tmp1
   sta re
   lsr         ; do odd bit shift (if any)
-  bcc :+1
+  bcc :++
 
   ldx #8
   lda #0
@@ -3103,8 +3115,8 @@ xxp:
   ;   the number in 'ra'.
   ;
 xnl:
-  lda <kxlog
-  ldy >kxlog
+  lda #<kxlog
+  ldy #>kxlog
   sta ptr1
   sty ptr1+1
   lda #7
@@ -3213,30 +3225,30 @@ xbd:
 ;
 .proc sinh
   jsr exp
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   lda w1
   ora #$80
   sta w1
   jsr add
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <half
-  ldy >half
-  ldx #w2
+  lda #<half
+  ldy #>half
+  ldx #<w2
   jsr copy2w
   jmp mul
 .endproc
@@ -3248,27 +3260,27 @@ xbd:
 ;
 .proc cosh
   jsr exp
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr add
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <half
-  ldy >half
-  ldx #w2
+  lda #<half
+  ldy #>half
+  ldx #<w2
   jsr copy2w
   jmp mul
 .endproc
@@ -3280,9 +3292,9 @@ xbd:
 ;
 .proc tanh
   jsr exp
-  lda <w3         ; w3 = exp(x)
-  ldy >w3
-  ldx #w2
+  lda #<w3         ; w3 = exp(x)
+  ldy #>w3
+  ldx #<w2
   jsr copy2w      ; w2 = exp(x)
   ldx #7
 : lda w3,x        ; save exp(x) in reg2
@@ -3290,23 +3302,23 @@ xbd:
   dex
   bpl :-
 
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div         ; w3 = exp(-x)
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w      ; w2 = exp(-x)
   ldx #7
 : lda w3,x        ; save exp(-x) in reg3
   sta reg3,x
   dex
   bpl :-
-  lda <reg2
-  ldy >reg2
-  ldx #w1
+  lda #<reg2
+  ldy #>reg2
+  ldx #<w1
   jsr copy2w
   jsr sub         ; w3 = exp(x) - exp(-x)
   ldx #7
@@ -3345,13 +3357,13 @@ xbd:
 ;
 .proc csch
   jsr sinh
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jmp div
 .endproc
@@ -3363,13 +3375,13 @@ xbd:
 ;
 .proc sech
   jsr cosh
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jmp div
 .endproc
@@ -3381,13 +3393,13 @@ xbd:
 ;
 .proc coth
   jsr tanh
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jmp div
 .endproc
@@ -3399,41 +3411,41 @@ xbd:
 ;
 .proc asinh
   ldx #7
-  lda w1,x        ; save argument 'x' in reg1
+: lda w1,x        ; save argument 'x' in reg1
   sta reg1,x
   dex
   bpl :-
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
   jsr mul          ; form x^2
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr add         ; form 1 + x^2
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr sqrt        ; w3 = sqrt(1 + x^2)
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <reg1
-  ldy >reg1
-  ldx #w1
+  lda #<reg1
+  ldy #>reg1
+  ldx #<w1
   jsr copy2w
   jsr add         ; w3 = x + sqrt(1 + x^2)
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jmp loge
 .endproc
@@ -3443,41 +3455,41 @@ xbd:
 ;
 .proc acosh
   ldx #7
-  lda w1,x        ; save argument 'x' in reg1
+: lda w1,x        ; save argument 'x' in reg1
   sta reg1,x
   dex
   bpl :-
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
   jsr mul          ; form x^2
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w2
+  lda #<unit
+  ldy #>unit
+  ldx #<w2
   jsr copy2w
   jsr sub         ; form x^2 - 1
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr sqrt        ; w3 = sqrt(x^2 - 1)
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <reg1
-  ldy >reg1
-  ldx #w1
+  lda #<reg1
+  ldy #>reg1
+  ldx #<w1
   jsr copy2w
   jsr add         ; w3 = x + sqrt(x^2 - 1)
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jmp loge
 .endproc
@@ -3491,18 +3503,18 @@ xbd:
   sta reg1,x
   dex
   bpl :-
-  lda <unit
-  ldy >unit
-  ldx #w2
+  lda #<unit
+  ldy #>unit
+  ldx #<w2
   jsr copy2w
   jsr add         ; w3 = 1 + x
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
-  lda <reg1
-  ldy >reg1
-  ldx #w2
+  lda #<reg1
+  ldy #>reg1
+  ldx #<w2
   jsr copy2w
   ldx #7
 : lda w3,x        ; save (1 + x) in reg1
@@ -3510,27 +3522,27 @@ xbd:
   dex
   bpl :-
   jsr sub         ; w3 = 1 - x
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <reg1
-  ldy >reg1
-  ldx #w1
+  lda #<reg1
+  ldy #>reg1
+  ldx #<w1
   jsr copy2w
   jsr div         ; w3 = (1 + x)/(1 - x)
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jsr loge
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <half
-  ldy >half
-  ldx #w2
+  lda #<half
+  ldy #>half
+  ldx #<w2
   jsr copy2w
   jmp mul
 .endproc
@@ -3539,18 +3551,18 @@ xbd:
 ;   hyperbolic arc cosecant: acsch(x) =  asinh(1/x)
 ;
 .proc acsch
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jmp asinh
 .endproc
@@ -3559,18 +3571,18 @@ xbd:
 ;   hyperbolic arc secant: asech(x) = acosh(1/x)
 ;
 .proc asech
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jmp acosh
 .endproc
@@ -3579,18 +3591,18 @@ xbd:
 ;   hyperbolic arc cotangent: acoth(x) = atanh(1/x)
 ;
 .proc acoth
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jmp atanh
 .endproc
@@ -3600,13 +3612,13 @@ xbd:
 ;
 .proc log2
   jsr loge
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <ln2
-  ldy >ln2
-  ldx #w2
+  lda #<ln2
+  ldy #>ln2
+  ldx #<w2
   jsr copy2w
   jmp div
 .endproc
@@ -3616,13 +3628,13 @@ xbd:
 ;
 .proc log10
   jsr loge
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <ln10
-  ldy >ln10
-  ldx #w2
+  lda #<ln10
+  ldy #>ln10
+  ldx #<w2
   jsr copy2w
   jmp div
 .endproc
@@ -3630,28 +3642,28 @@ xbd:
 ;
 ;   power(x,y) = x^y = exp(y.loge(x)) = w1^w2
 .proc pow
-  lda <w2
+  lda #<w2
   sta ptr1
-  lda >w2
+  lda #>w2
   sta ptr1+1
-  lda <reg3
+  lda #<reg3
   sta ptr2
-  lda >reg3
+  lda #>reg3
   sta ptr2+1
   jsr copyreg
   jsr loge
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <reg3
-  ldy >reg3
-  ldx #w2
+  lda #<reg3
+  ldy #>reg3
+  ldx #<w2
   jsr copy2w
   jsr mul
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
   jmp exp
 .endproc
@@ -3662,13 +3674,13 @@ xbd:
 ;   w3 = 1/w1
 ;
 .proc inv
-  lda <w1
-  ldy >w1
-  ldx #w2
+  lda #<w1
+  ldy #>w1
+  ldx #<w2
   jsr copy2w
-  lda <unit
-  ldy >unit
-  ldx #w1
+  lda #<unit
+  ldy #>unit
+  ldx #<w1
   jsr copy2w
   jsr div
   rts
@@ -3678,9 +3690,9 @@ xbd:
 ;   abs -- w3 = abs(w1)
 ;
 .proc abs
-  lda <w1
-  ldy >w1
-  ldx #w3
+  lda #<w1
+  ldy #>w1
+  ldx #<w3
   jsr copy2w
   lda w3
   and #$7f
@@ -3692,9 +3704,9 @@ xbd:
 ;   chs -- w3 = -w1
 ;
 .proc chs
-  lda <w1
-  ldy >w1
-  ldx #w3
+  lda #<w1
+  ldy #>w1
+  ldx #<w3
   jsr copy2w
   lda w3
   eor #$80
@@ -3800,15 +3812,15 @@ inta:
 intx:
   rts
 int0:
-  lda <zero
-  ldy >zero
-  ldx #w3
+  lda #<zero
+  ldy #>zero
+  ldx #<w3
   jsr copy2w
   rts
 int1:
-  lda <w1
-  ldy >w1
-  ldx #w3
+  lda #<w1
+  ldy #>w1
+  ldx #<w3
   jsr copy2w
   rts
 .endproc
@@ -3823,13 +3835,13 @@ int1:
   dex
   bpl :-
   jsr int     ; find integer part of argument in w1
-  lda <w3     ; move integer part to w2
-  ldy >w3
-  ldx #w2
+  lda #<w3     ; move integer part to w2
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
-  lda <reg3
-  ldy >reg3
-  ldx #w1
+  lda #<reg3
+  ldy #>reg3
+  ldx #<w1
   jsr copy2w
   jsr sub     ; subtract integer part from argument for fraction
   lda w3+2
@@ -3838,58 +3850,58 @@ int1:
 : rts
 .endproc
 
-.proc tanscale            ; scale argument to range: 0 <= arg <= pi/4
-  lda <twopi
+.proc tanscale            ; scale argument to range: 0 #<= arg #<= pi/4
+  lda #<twopi
   sta ptr1
-  lda >twopi
+  lda #>twopi
   sta ptr1+1
-  lda <scalereg   ; put 2pi in scale register
+  lda #<scalereg   ; put 2pi in scale register
   sta ptr2
-  lda >scalereg
+  lda #>scalereg
   sta ptr2+1
   jsr copyreg
-  jsr scale       ; get   2pi*frac(arg/2pi), -2pi <= arg <= 2pi
-  lda w3          ; if arg < 0 add 2pi
+  jsr scale       ; get   2pi*frac(arg/2pi), -2pi #<= arg #<= 2pi
+  lda w3          ; if arg #< 0 add 2pi
   bpl :+
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <twopi
-  ldy >twopi
-  ldx #w2
+  lda #<twopi
+  ldy #>twopi
+  ldx #<w2
   jsr copy2w
   jsr add
 : ; now find and save quadrant
-  lda <tpio2
+  lda #<tpio2
   sta ptr1
-  lda >tpio2      ;   ptr1        ptr2        n z
+  lda #>tpio2      ;   ptr1        ptr2        n z
   sta ptr1+1      ;          =                x 1
-  lda <w3         ;          >                0 0
-  sta ptr2        ;          <                1 0
-  lda >w3
+  lda #<w3         ;          #>                0 0
+  sta ptr2        ;          #<                1 0
+  lda #>w3
   sta ptr2+1
   jsr cmpreg      ; 3pi/2 | w3
   bpl :+
-  lda #4          ; w3 > 3pi/2
+  lda #4          ; w3 #> 3pi/2
   sta qdrnt
   jmp tsc1
-: lda <pi
+: lda #<pi
   sta ptr1
-  lda >pi
+  lda #>pi
   sta ptr1+1
   jsr cmpreg     ; pi | w3
   bpl :+
-  lda #3         ; w3 > pi
+  lda #3         ; w3 #> pi
   sta qdrnt
   jmp tsc1
-: lda <pio2
+: lda #<pio2
   sta ptr1
-  lda >pio2
+  lda #>pio2
   sta ptr1+1
   jsr cmpreg     ; pi/2 | w3
   bpl :+
-  lda #2         ; w3 > pi/2
+  lda #2         ; w3 #> pi/2
   sta qdrnt
   jmp tsc1
 : lda #1
@@ -3899,13 +3911,13 @@ tsc1:
   sta ra
   cmp #3
   bcc :+
-  lda <w3         ; map quadrants III and IV to I and II
-  ldy >w3
-  ldx #w1
+  lda #<w3         ; map quadrants III and IV to I and II
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <pi
-  ldy >pi
-  ldx #w2
+  lda #<pi
+  ldy #>pi
+  ldx #<w2
   jsr copy2w
   jsr sub
 : lda qdrnt
@@ -3913,41 +3925,41 @@ tsc1:
   bne :+
   lda #$80
   sta tnsgn
-: lda <pio2
+: lda #<pio2
   sta ptr1
-  lda >pio2
+  lda #>pio2
   sta ptr1+1
   jsr cmpreg      ; pi/2 | w3
   bpl :+
-  lda <w3         ; w3 > pi/2
-  ldy >w3
-  ldx #w1
+  lda #<w3         ; w3 #> pi/2
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <pi
-  ldy >pi
-  ldx #w2
+  lda #<pi
+  ldy #>pi
+  ldx #<w2
   jsr copy2w
   jsr sub
-: lda w3          ; range is: -pi/2 < arg < pi/2
+: lda w3          ; range is: -pi/2 #< arg #< pi/2
   and #$7f        ; take abs value, tnsgn is already correct
   sta w3
-  lda <w3         ; now range is:     0 <= arg <= pi/2.
-  sta ptr2        ; reduce range to:  0 <= arg <= pi/4
-  lda >w3
+  lda #<w3         ; now range is:     0 #<= arg #<= pi/2.
+  sta ptr2        ; reduce range to:  0 #<= arg #<= pi/4
+  lda #>w3
   sta ptr2+1
-  lda <pio4
+  lda #<pio4
   sta ptr1
-  lda >pio4
+  lda #>pio4
   sta ptr1+1
   jsr cmpreg      ; pi/4 | w3
-  bpl :+          ; if upper part of range, pi/4 < arg < pi/2, is
-  lda <pio2       ;  mapped to lower part, 0 < arg < pi/4, toggle
-  ldy >pio2       ;  cotangent flag (cotflg).
-  ldx #w1
+  bpl :+          ; if upper part of range, pi/4 #< arg #< pi/2, is
+  lda #<pio2       ;  mapped to lower part, 0 #< arg #< pi/4, toggle
+  ldy #>pio2       ;  cotangent flag (cotflg).
+  ldx #<w1
   jsr copy2w
-  lda <w3
-  ldy >w3
-  ldx #w2
+  lda #<w3
+  ldy #>w3
+  ldx #<w2
   jsr copy2w
   jsr sub
   lda cotflg
@@ -3957,23 +3969,23 @@ tsc1:
 .endproc
 
 .proc scale
-  lda <scalereg
-  ldy >scalereg
-  ldx #w2
+  lda #<scalereg
+  ldy #>scalereg
+  ldx #<w2
   jsr copy2w  ; copy scale to w2
   jsr div     ; perform division
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w  ; move result to w1
   jsr frac    ; take fractional portion of result
-  lda <w3
-  ldy >w3
-  ldx #w1
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
   jsr copy2w
-  lda <scalereg
-  ldy >scalereg
-  ldx #w2
+  lda #<scalereg
+  ldy #>scalereg
+  ldx #<w2
   jsr copy2w  ; copy scale to w2
   jsr mul     ; result is arg mod scale
   rts
@@ -3984,8 +3996,8 @@ tsc1:
 ; returns the following:
 ;                                       n z
 ;   zflag = 1 if numbers are the same   x 1
-;   nflag = 0 if ptr1 > ptr2            0 0
-;   nflag = 1 if ptr1 < ptr2            1 0
+;   nflag = 0 if ptr1 #> ptr2            0 0
+;   nflag = 1 if ptr1 #< ptr2            1 0
 ;
 .proc cmpreg
   sed
@@ -4069,10 +4081,10 @@ zr:
   ;   all signs match, but exponents differ
   ;
   ;   largest number
-  ;       msgn+, esgn+, exponent largest   80.0 >  1.23
-  ;       msgn+, esgn-, exponent smallest  0.33 >  0.02
-  ;       msgn-, esgn+, exponent smallest -1.23 > -80.0
-  ;       msgn-, esgn-, exponent largest  -0.02 > -0.33
+  ;       msgn+, esgn+, exponent largest   80.0 #>  1.23
+  ;       msgn+, esgn-, exponent smallest  0.33 #>  0.02
+  ;       msgn-, esgn+, exponent smallest -1.23 #> -80.0
+  ;       msgn-, esgn-, exponent largest  -0.02 #> -0.33
   ;
 : ldy #1
   sec
@@ -4105,7 +4117,7 @@ e2max:
 .endproc
 ; XXX: is it ok to leak to copyreg? is this intended?
 
-.proc copyreg:
+.proc copyreg
   ldy #7
 : lda (ptr1),y
   sta (ptr2),y
@@ -4129,9 +4141,9 @@ e2max:
 ;   utility routine to place zero in w3 and return
 ;
 .proc retzr
-  lda <zero
-  ldy >zero
-  ldx #w3
+  lda #<zero
+  ldy #>zero
+  ldx #<w3
   jsr copy2w
   rts
 .endproc
@@ -4144,9 +4156,9 @@ e2max:
 ;       $30,2,0,0,0,0,0,0
 ;
 .proc domnerr
-  lda <dmnerr
-  ldy >dmnerr
-  ldx #w3
+  lda #<dmnerr
+  ldy #>dmnerr
+  ldx #<w3
   jsr copy2w
   jmp errhndlr
 .endproc
@@ -4159,9 +4171,9 @@ e2max:
 ;       $30,1,0,0,0,0,0,0
 ;
 .proc rangerr
-  lda <rngerr
-  ldy >rngerr
-  ldx #w3
+  lda #<rngerr
+  ldy #>rngerr
+  ldx #<w3
   jsr copy2w
   jmp errhndlr
 .endproc
@@ -4174,9 +4186,9 @@ e2max:
 ;       $29,$99,$99,$99,$99,$99,$99,$99
 ;
 .proc ovrferr
-  lda <ovferr
-  ldy >ovferr
-  ldx #w3
+  lda #<ovferr
+  ldy #>ovferr
+  ldx #<w3
   jsr copy2w
   jmp errhndlr
 .endproc
@@ -4189,9 +4201,9 @@ e2max:
 ;       $30,3,0,0,0,0,0,0
 ;
 .proc dvzrerr
-  lda <dvzerr
-  ldy >dvzerr
-  ldx #w3
+  lda #<dvzerr
+  ldy #>dvzerr
+  ldx #<w3
   jsr copy2w
   jmp errhndlr
 .endproc
