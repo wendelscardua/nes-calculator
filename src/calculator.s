@@ -50,6 +50,22 @@
   LDX #FADE_DELAY
   JSR wait_frames
 
+  ; XXX testing
+  lda #<pi
+  ldy #>pi
+  ldx #<w1
+  jsr copy2w
+
+  lda #<exp0
+  ldy #>exp0
+  ldx #<w2
+  jsr copy2w
+
+  ldx #$00
+  jsr calc
+  ; 00 31 41 59 26 53 59 = pi
+  ; 00 27 18 28 18 28 46 = e
+  ; 00 58 59 87 44 82 05 = pi+e
   RTS
 .endproc
 
