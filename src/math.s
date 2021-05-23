@@ -3624,7 +3624,7 @@ xbd:
 ;                                           1 - x
 .proc atanh
   ldx #7
-  lda w1,x        ; save 'x' in reg1
+: lda w1,x        ; save 'x' in reg1
   sta reg1,x
   dex
   bpl :-
@@ -3955,7 +3955,7 @@ int1:
 ;
 .proc frac
   ldx #7
-  lda w1,x    ; save 'x' in reg3
+: lda w1,x    ; save 'x' in reg3
   sta reg3,x
   dex
   bpl :-
