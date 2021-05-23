@@ -61,15 +61,8 @@
   ldx #<w2
   jsr copy2w
 
-  ; bugged:
-  ;  asec
-  ;  acsc, acot
-  ldx #operations::asec
+  ldx #operations::acot
   jsr calc
-  ; 00 00 31 41 59 26 53 59 = pi
-  ; 00 00 27 18 28 18 28 46 = e
-  ; 00 00 15 70 79 63 26 79 = pi/2
-  ; 40 01 78 53 98 16 33 98 = pi/4
   RTS
 .endproc
 

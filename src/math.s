@@ -2616,6 +2616,10 @@ atnx:
   ldx #<w1
   jsr copy2w
   jsr div
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
+  jsr copy2w
   jmp asin
 .endproc
 
@@ -2634,6 +2638,10 @@ atnx:
   ldx #<w1
   jsr copy2w
   jsr div
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
+  jsr copy2w
   jmp acos
 .endproc
 
@@ -2652,6 +2660,10 @@ atnx:
   ldx #<w1
   jsr copy2w
   jsr div
+  lda #<w3
+  ldy #>w3
+  ldx #<w1
+  jsr copy2w
   jmp atan
 .endproc
 
