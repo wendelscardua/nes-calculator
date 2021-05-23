@@ -562,7 +562,10 @@ cxp1:
   ldx #reglen-2  ; add previously aligned 'ra' to 'rb', result in 'rb'
   clc
 : lda ra+1,x
-  adc rb+1,x
+  sta temp_x
+  lda rb+1,x
+  sta temp_y
+  jsr bcd_add
   sta rb+1,x
   dex
   bpl :-
