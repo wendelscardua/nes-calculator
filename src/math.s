@@ -2902,7 +2902,7 @@ bigexp:
 
 .proc cpyra2rc
   ldy #6
-  lda ra+2,y
+: lda ra+2,y
   sta rc+2,y
   dey
   bpl :-
