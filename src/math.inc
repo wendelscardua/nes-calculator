@@ -5,6 +5,48 @@
 
   .import w1, w2, w3, w4
 
+  .enum operations
+    add
+    sub
+    mul
+    div
+    sqrt
+    inv
+    int
+    frac
+    abs
+    chs
+    sin
+    cos
+    tan
+    csc
+    sec_
+    cot
+    asin
+    acos
+    atan
+    acsc
+    asec
+    acot
+    loge
+    exp
+    sinh
+    cosh
+    tanh
+    csch
+    sech
+    coth
+    asinh
+    acosh
+    atanh
+    acsch
+    asech
+    acoth
+    log2
+    log10
+    pow
+  .endenum
+
   .segment "CODE"
 
   .import calc
