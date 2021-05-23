@@ -550,10 +550,10 @@ adne:
   sta tmp2
   clc
   lda w1+1
-  adc w2+1
+  bcd_adc w2+1
   tax
   lda tmp1
-  adc tmp2
+  bcd_adc tmp2
   sta tmp1
   stx tmp2
   rts
@@ -568,17 +568,17 @@ adne:
   sta tmp2
   sec             ; trial difference assuming e1 #>= e2
   lda w1+1        ; (It's just as easy to go ahead and perform the
-  sbc w2+1        ;  subtraction as it is to perform a multibyte
+  bcd_sbc w2+1        ;  subtraction as it is to perform a multibyte
   tax             ;  compare. If the numbers were properly ordered,
   lda tmp1        ;  we are done. Otherwise, we subtract in reverse
-  sbc tmp2        ;  order, which we would have done anyway.)
+  bcd_sbc tmp2        ;  order, which we would have done anyway.)
   bcs :+          ; OK, exit with carry set.
   sec             ; Underflow. e1 is smaller than e2, so recalculate
   lda w2+1        ;  exponent difference.
-  sbc w1+1
+  bcd_sbc w1+1
   tax
   lda tmp2
-  sbc tmp1
+  bcd_sbc tmp1
   clc
 : sta tmp1
   stx tmp2
@@ -599,7 +599,7 @@ clrlp:           ; clear ra, rb
   bpl clrlp
   clc         ; determine register alignment offset.
   lda tmp2
-  adc #$11    ; this 'magic' number is 2x5+1.
+  bcd_adc #$11    ; this 'magic' number is 2x5+1.
   tay         ;
   lda dec2bin,y ; convert to binary...
   lsr         ; ... then convert to bytes
@@ -692,7 +692,7 @@ sabx:
   ldx #7        ; round the result in 'rb'
   lda #$50
   clc
-: adc rb+1,x
+: bcd_adc rb+1,x
   sta rb+1,x
   lda #0
   dex
@@ -702,7 +702,7 @@ sabx:
   jsr rotrgtb     ; ...and normalize, if needed...
   clc
   lda dadj        ; assume dadj #< 99 but (possibly) #> 9
-  adc #1
+  bcd_adc #1
   sta dadj        ; ... then increment decimal adjustment.
 : rts
 .endproc
@@ -730,17 +730,17 @@ rbta:
   bvc rbtw2       ; add adjustment to exponent
   sec
   lda w3+1
-  sbc dadj
+  bcd_sbc dadj
   tax
   lda w3
-  sbc #0
+  bcd_sbc #0
   bcs rbtxa
   sec
   lda dadj
-  sbc w3+1
+  bcd_sbc w3+1
   sta w3+1
   lda #0
-  sbc w3
+  bcd_sbc w3
   sta w3
   lda w1
   and #$c0
@@ -753,10 +753,10 @@ rbta:
 rbtw2:
   clc
   lda w1+1
-  adc dadj
+  bcd_adc dadj
   tax
   lda w1
-  adc #0
+  bcd_adc #0
 rbtxa:
   sta w3        ; save exponent
   stx w3+1
@@ -1001,18 +1001,18 @@ mkolp:
   ldy #7        ; now compute all multiples
   clc
 : lda (ptr1),y
-  adc mtbl1,y     ; BCD add
+  bcd_adc mtbl1,y     ; BCD add
   sta (ptr2),y
   dey
   bpl :-
   cld
   clc             ; bump pointers for next entry
   lda ptr1
-  adc #$10
+  bcd_adc #$10
   sta ptr1
   clc
   lda ptr2
-  adc #$10
+  bcd_adc #$10
   sta ptr2
   sed
   dex
@@ -1066,7 +1066,7 @@ molp:
   sta mptr
   clc
 : lda (mptr),y   ; add multiple of current digit to partial sum
-  adc (ptr2),y
+  bcd_adc (ptr2),y
   sta (ptr2),y
   dey
   bpl :-
@@ -1101,7 +1101,7 @@ psl1:
   clc
 psl2:
   lda (mptr),y
-  adc (ptr2),y
+  bcd_adc (ptr2),y
   sta (ptr2),y
   dey
   bpl psl2
@@ -1109,7 +1109,7 @@ psl2:
   ldy ptr2
   dey
 : lda $400,y
-  adc #0
+  bcd_adc #0
   sta $400,y
   dey
   bcs :-
@@ -1164,10 +1164,10 @@ rct1: ldx #5
 .proc incexp
   clc      ; increment an exponent
   lda tmp2
-  adc #1
+  bcd_adc #1
   sta tmp2
   lda tmp1
-  adc #0
+  bcd_adc #0
   sta tmp1
   rts
 .endproc
@@ -1175,10 +1175,10 @@ rct1: ldx #5
 .proc decexp
   sec      ; decrement an exponent
   lda tmp2
-  sbc #1
+  bcd_sbc #1
   sta tmp2
   lda tmp1
-  sbc #0
+  bcd_sbc #0
   sta tmp1
   rts
 .endproc
@@ -1385,7 +1385,7 @@ dsub:
   sec
 sulp:
   lda rb,y           ; shift remainder (and quotient) left one digit
-  sbc (ptr1),y
+  bcd_sbc (ptr1),y
   sta rb,y
   dey
   bpl sulp
@@ -1393,7 +1393,7 @@ sulp:
   dec rb+15       ; here we recover from underflow caused by
   ldy #7          ;  subtracting a too-large multiple
 : lda rb,y       ; correct remainder after underflow
-  adc mtbl+$10,y  ;  by adding 1st multiple back in
+  bcd_adc mtbl+$10,y  ;  by adding 1st multiple back in
   sta rb,y
   dey
   bpl :-
@@ -1458,21 +1458,21 @@ sq2:
   ldx #7          ; multiply mantissa by 5
   clc
 : lda ra+1,x
-  adc ra+1,x
+  bcd_adc ra+1,x
   sta rb+1,x
   dex
   bpl :-
   ldx #7          ; rb = 2 * ra
   clc
 : lda rb+1,x
-  adc rb+1,x
+  bcd_adc rb+1,x
   sta rb+1,x
   dex
   bpl :-
   ldx #7
   clc
 : lda ra+1,x
-  adc rb+1,x
+  bcd_adc rb+1,x
   sta ra+1,x
   dex
   bpl :-
@@ -1528,10 +1528,10 @@ sqx1b:
   and #$1
   beq sqxc
   clc
-  adc w3+1
+  bcd_adc w3+1
   sta w3+1
   lda w3
-  adc #0
+  bcd_adc #0
   sta w3
 sqxc:
   lda #$40       ; ...and correct the result sign
@@ -1544,7 +1544,7 @@ sq3:
   ldx ptr1
   sec
 : lda ra,x
-  sbc rb,x
+  bcd_sbc rb,x
   sta ra,x
   dex
   bpl :-
@@ -1552,7 +1552,7 @@ sq3:
   ldx ptr1
   clc
   lda rb,x
-  adc #$10
+  bcd_adc #$10
   sta rb,x
   bcc sq3
 sq4:
@@ -1569,7 +1569,7 @@ sq5:
   ldx ptr1
   clc
 : lda ra,x
-  adc rb,x
+  bcd_adc rb,x
   sta ra,x
   dex
   bpl :-
@@ -1644,7 +1644,7 @@ pl1:
   cld
   clc
   lda pptr        ; bump coefficient pointer to next value
-  adc #8
+  bcd_adc #8
   sta pptr
   bcc pl1a
   inc pptr+1
@@ -1900,7 +1900,7 @@ tn0xb:
   lda w1+1
   lsr
   cld
-  adc #5
+  bcd_adc #5
   sed
   tax
   ldy #5
@@ -2078,14 +2078,14 @@ tnpm1:
   ldx #10
   sec
 : lda rb+2,x      ; x2 = x1 - y1*10^j
-  sbc rc+2,x
+  bcd_sbc rc+2,x
   sta rb+2,x
   dex
   bpl :-
   ldx #10
   clc
 : lda ra+2,x      ; y2 = y1 + x1*10^j
-  adc rd+2,x
+  bcd_adc rd+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -2113,7 +2113,7 @@ tpd0:
   sec
 tpd1:
   lda ra+2,y     ; subtract 1 instance of current table value
-  sbc (ptr1),y
+  bcd_sbc (ptr1),y
   sta ra+2,y
   dey
   bpl tpd1
@@ -2125,7 +2125,7 @@ tpd2a:
   clc
 tpd2:
   lda ra+2,y
-  adc (ptr1),y
+  bcd_adc (ptr1),y
   sta ra+2,y
   dey
   bpl tpd2
@@ -2135,7 +2135,7 @@ tpd2:
   cld             ; ...bump tangent table pointer to next entry
   clc
   lda ptr1
-  adc #8
+  bcd_adc #8
   sta ptr1
   bcc tpd3
   inc ptr1+1
@@ -2338,7 +2338,7 @@ atn00a:
   lsr
   cld
   clc
-  adc #5
+  bcd_adc #5
   sed
   tax
   ldy #5
@@ -2403,7 +2403,7 @@ atnlp1:
   sec
   ldx #6
 : lda ra+2,x
-  sbc rd+2,x
+  bcd_sbc rd+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -2411,7 +2411,7 @@ atnlp1:
   clc
   ldx #6
 : lda rb+2,x
-  adc rc+2,x
+  bcd_adc rc+2,x
   sta rb+2,x
   dex
   bpl :-
@@ -2422,7 +2422,7 @@ rstr:
   ldx #6
   clc
 : lda ra+2,x
-  adc rd+2,x
+  bcd_adc rd+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -2505,7 +2505,7 @@ atnres:
   lsr
   clc
   cld
-  adc #5
+  bcd_adc #5
   tax
   ldy #5
 : lda w3+2,y
@@ -2539,7 +2539,7 @@ apmlp:
   sed
   clc
 : lda ra+2,y
-  adc (ptr1),y
+  bcd_adc (ptr1),y
   sta ra+2,y
   dey
   bpl :-
@@ -2549,7 +2549,7 @@ atnxtd:
   cld
   clc
   lda ptr1
-  adc #8
+  bcd_adc #8
   sta ptr1
   bcc :+
   inc ptr1+1
@@ -2734,7 +2734,7 @@ lnlp0:
   ldx #6
   sec
 : lda #0              ; compute residual to start pseudo-multiply
-  sbc ra+2,x
+  bcd_sbc ra+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -2766,7 +2766,7 @@ lnlp1:
   ldy #6
   clc
 : lda ra+2,y
-  adc (ptr1),y
+  bcd_adc (ptr1),y
   sta ra+2,y
   dey
   bpl :-
@@ -2775,7 +2775,7 @@ npsm:
   cld            ; bump table pointer to next coefficient
   clc
   lda ptr1
-  adc #8
+  bcd_adc #8
   sta ptr1
   bcc :+
   inc ptr1+1
@@ -2917,7 +2917,7 @@ bigexp:
   ldx #7
   sed
 : lda ra+2,x
-  adc rc+2,x
+  bcd_adc rc+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -2933,7 +2933,7 @@ bigexp:
   sed
   ldx #7
 : lda ra+2,x
-  sbc rc+2,x
+  bcd_sbc rc+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -2974,7 +2974,7 @@ src0:
   beq srcx    ; exit if no further shift required
   cld
   clc
-  adc #7
+  bcd_adc #7
   sed
   tay
   ldx #7
@@ -3027,7 +3027,7 @@ lnslp:
   cld
   clc
   lda ptr3
-  adc #8
+  bcd_adc #8
   sta ptr3
   bcc :+
   inc ptr3+1
@@ -3211,7 +3211,7 @@ xxp:
   lsr         ; ignore odd bit for now
   cld
   clc
-  adc #5
+  bcd_adc #5
   tay
 : lda w3+2,x
   sta ra+2,y
@@ -3258,7 +3258,7 @@ mxlp:
   sec
   ldy #7
 : lda ra+2,y
-  sbc (ptr1),y
+  bcd_sbc (ptr1),y
   sta ra+2,y
   sta rc+2,y
   dey
@@ -3273,14 +3273,14 @@ mxlp:
   clc
   ldy #7
 : lda ra+2,y         ; restore 'ra' after underflow
-  adc (ptr1),y
+  bcd_adc (ptr1),y
   sta ra+2,y
   dey
   bpl :-
   cld
   clc
   lda ptr1
-  adc #8
+  bcd_adc #8
   sta ptr1
   bcc :+
   inc ptr1+1
@@ -3322,7 +3322,7 @@ xml:
   ldx #5
   clc
 : lda ra+2,x
-  adc rc+2,x
+  bcd_adc rc+2,x
   sta ra+2,x
   dex
   bpl :-
@@ -3842,7 +3842,7 @@ xbd:
   ldy #7
   clc
 : lda ra+2,y
-  adc (ptr1),y
+  bcd_adc (ptr1),y
   sta ra+2,y
   dey
   bpl :-
@@ -3880,7 +3880,7 @@ scd0:
   beq scdx    ; exit if no further shift required
   cld
   clc
-  adc #7
+  bcd_adc #7
   sed
   tay
   ldx #7
@@ -3917,7 +3917,7 @@ scdx:
   cld
   lda #$b
   sec
-  sbc dec2bin,x   ; number of zeros after decimal point
+  bcd_sbc dec2bin,x   ; number of zeros after decimal point
   sed
   lsr
   beq inta
@@ -4190,7 +4190,7 @@ negm:
   sec
 mantst:
   lda (ptr2),y
-  sbc (ptr1),y
+  bcd_sbc (ptr1),y
   beq zr
   inc tmp1
 zr:
@@ -4213,10 +4213,10 @@ zr:
 : ldy #1
   sec
   lda (ptr2),y
-  sbc (ptr1),y
+  bcd_sbc (ptr1),y
   dey
   lda (ptr2),y
-  sbc (ptr1),y
+  bcd_sbc (ptr1),y
   bcs e2max
   ;   ptr1 has largest exponent, all signs are the same
   lda (ptr1),y
