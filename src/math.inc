@@ -1,7 +1,7 @@
 .ifndef _MATH_INC_
   _MATH_INC_ = 1
 
-  .segment "BSS"
+  .segment "MATH"
 
   .import w1, w2, w3, w4
 
