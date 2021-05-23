@@ -1,7 +1,7 @@
 .ifndef _MATH_INC_
   _MATH_INC_ = 1
 
-  .segment "ZEROPAGE"
+  .segment "BSS"
 
   .import w1, w2, w3, w4
 

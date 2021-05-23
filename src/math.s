@@ -241,7 +241,7 @@ jtbl_h: .hibytes jtbl
 ;    brk
 
 
-.segment "ZEROPAGE"
+.segment "BSS"
 
 .export w1, w2, w3, w4
 
