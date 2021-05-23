@@ -61,11 +61,11 @@
   ldx #<w2
   jsr copy2w
 
-  ldx #$00
+  ldx #$01
   jsr calc
   ; 00 31 41 59 26 53 59 = pi
   ; 00 27 18 28 18 28 46 = e
-  ; 00 58 59 87 44 82 05 = pi+e
+  ; 01 42 33 10 82 51 30 = pi-e
   RTS
 .endproc
 
