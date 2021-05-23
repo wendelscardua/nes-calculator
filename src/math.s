@@ -1108,9 +1108,9 @@ psl2:
   bcc psl3
   ldy ptr2
   dey
-: lda $400,y
+: lda ra,y
   bcd_adc #0
-  sta $400,y
+  sta ra,y
   dey
   bcs :-
 
