@@ -4,7 +4,7 @@
   .segment "ZEROPAGE"
 
   .import temp_a, temp_idx
-  .import temp_x, temp_sx, temp_y, temp_dir
+  .import temp_x, temp_y, temp_dir
   .import temp_ptr
-  .import temp_z
+  .import temp_z, temp_w
 .endif
