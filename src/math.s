@@ -957,8 +957,9 @@ cxp2:
   ora w3
   sta w3
   rts
+.endproc
 
-mulm:
+.proc mulm
   lda w1+2       ; multiply mantissas
   beq mzro
   lda w2+2
