@@ -62,9 +62,9 @@
   jsr copy2w
 
   ; bugged:
-  ;  pow, log10, log2, loge, asec
-  ;  acsc, acot, asinh, acosh, atanh, acsch, asech, acoth
-  ldx #operations::frac
+  ;  asec
+  ;  acsc, acot
+  ldx #operations::asec
   jsr calc
   ; 00 00 31 41 59 26 53 59 = pi
   ; 00 00 27 18 28 18 28 46 = e
