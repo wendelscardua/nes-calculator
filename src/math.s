@@ -298,6 +298,39 @@ ret:
   rts
 .endproc
 
+.proc bcd_sub
+  sty temp_z
+  ldy temp_x
+  lda dec2bin, y
+  sta temp_x
+  ldy temp_y
+  lda dec2bin, y
+  sta temp_y
+  lda temp_x
+  sbc temp_y
+  sta temp_x
+  cmp #100
+  bcs over
+  lda #$1
+  sta temp_y
+  jmp ret
+over:
+  clc
+  adc #100
+  sta temp_x
+  lda #$0
+  sta temp_y
+ret:
+  ldy temp_x
+  lda bin2dec, y
+  sta temp_x
+  ldy temp_z
+  lda temp_y
+  cmp #$1
+  lda temp_x
+  rts
+.endproc
+
 ;
 ;   main floating point math package
 ;
@@ -580,7 +613,10 @@ cxp1:
   ldx #reglen
   sec
 : lda ra+1,x
-  sbc rb+1,x
+  sta temp_x
+  lda rb+1,x
+  sta temp_y
+  jsr bcd_sub
   sta rb+1,x
   dex
   bpl :-
