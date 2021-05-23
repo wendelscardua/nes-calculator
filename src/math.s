@@ -266,6 +266,22 @@ reg4: .res 8
 .segment "CODE"
 
 .proc bcd_add
+  php
+  stx temp_z ; save x
+  tsx
+  lda $101, x
+  and #%1000 ; decimal flag
+  bne bcd_mode
+  ; bin mode
+  ldx temp_z ; restore x
+  plp
+  lda temp_x
+  adc temp_y
+  rts
+
+bcd_mode:
+  ldx temp_z ; restore x
+  plp
   sty temp_z
   ldy temp_x
   lda dec2bin, y
@@ -299,6 +315,23 @@ ret:
 .endproc
 
 .proc bcd_sub
+  php
+  stx temp_z ; save x
+  tsx
+  lda $101, x
+  and #%1000 ; decimal flag
+  bne bcd_mode
+  ; bin mode
+  ldx temp_z ; restore x
+  plp
+  lda temp_x
+  sbc temp_y
+  rts
+
+bcd_mode:
+  ldx temp_z ; restore x
+  plp
+
   sty temp_z
   ldy temp_x
   lda dec2bin, y
@@ -309,12 +342,11 @@ ret:
   lda temp_x
   sbc temp_y
   sta temp_x
-  cmp #100
-  bcs over
+  bmi under
   lda #$1
   sta temp_y
   jmp ret
-over:
+under:
   clc
   adc #100
   sta temp_x
