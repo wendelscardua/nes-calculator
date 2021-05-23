@@ -265,6 +265,28 @@ reg4: .res 8
 
 .segment "CODE"
 
+.macro bcd_adc param, indirect
+  sta temp_x
+  .ifnblank indirect
+    lda param, indirect
+  .else
+    lda param
+  .endif
+  sta temp_y
+  jsr bcd_add
+.endmacro
+
+.macro bcd_sbc param, indirect
+  sta temp_x
+  .ifnblank indirect
+    lda param, indirect
+  .else
+    lda param
+  .endif
+  sta temp_y
+  jsr bcd_sub
+.endmacro
+
 .proc bcd_add
   php
   stx temp_z ; save x
@@ -627,10 +649,7 @@ cxp1:
   ldx #reglen-2  ; add previously aligned 'ra' to 'rb', result in 'rb'
   clc
 : lda ra+1,x
-  sta temp_x
-  lda rb+1,x
-  sta temp_y
-  jsr bcd_add
+  bcd_adc rb+1,x
   sta rb+1,x
   dex
   bpl :-
@@ -645,10 +664,7 @@ cxp1:
   ldx #reglen
   sec
 : lda ra+1,x
-  sta temp_x
-  lda rb+1,x
-  sta temp_y
-  jsr bcd_sub
+  bcd_sbc rb+1,x
   sta rb+1,x
   dex
   bpl :-
