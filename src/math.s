@@ -3129,7 +3129,7 @@ xrt1:
   jsr mul
   lda #<w3
   ldy #>w3
-  ldx #reg1
+  ldx #<reg1
   jsr copy2w      ; save backup copy of arg/ln10 in 'reg1'
   lda #<w3
   ldy #>w3
@@ -3142,7 +3142,7 @@ xrt1:
   jsr copy2w
   lda #<w3
   ldy #>w3
-  ldx #reg2       ; save power of 10 (exponent) in 'reg2'
+  ldx #<reg2       ; save power of 10 (exponent) in 'reg2'
   jsr copy2w
   jsr sub
   lda #<w3
