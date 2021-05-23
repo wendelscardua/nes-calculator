@@ -61,14 +61,15 @@
   ldx #<w2
   jsr copy2w
 
-  ; bugged: mul, div, inv, frac, sin, cos, sec_, cot, pow, log10, log2, loge, exp
-  ; untested: asin, acos, atan, acsc, asec, acot, sinh, cosh, tanh
-  ; csch, sech, coth, asinh, acosh, atanh, acsch, asech, acoth
-  ldx #operations::mul
+  ; bugged:
+  ;  frac, pow, log10, log2, loge, asec
+  ;  acsc, acot, asinh, acosh, atanh, acsch, asech, acoth
+  ldx #operations::frac
   jsr calc
-  ; 00 31 41 59 26 53 59 = pi
-  ; 00 27 18 28 18 28 46 = e
-  ; 00 85 39 73 42 22 67 = pi*e
+  ; 00 00 31 41 59 26 53 59 = pi
+  ; 00 00 27 18 28 18 28 46 = e
+  ; 00 00 15 70 79 63 26 79 = pi/2
+  ; 40 01 78 53 98 16 33 98 = pi/4
   RTS
 .endproc
 
