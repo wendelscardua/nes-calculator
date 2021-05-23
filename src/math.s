@@ -988,9 +988,9 @@ mzro:
   sta mptr+1
   sta ptr1+1
   sta ptr2+1
-  lda #$10
+  lda #<mtbl1
   sta ptr1
-  lda #$20
+  lda #<mtbl2
   sta ptr2
   ldx #7
 : lda ra+9,x     ; copy multiplier to 1st multiple
