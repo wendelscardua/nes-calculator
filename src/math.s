@@ -265,55 +265,36 @@ reg4: .res 8
 
 .segment "CODE"
 
-.proc bcd_add ; fix result if bcd was enabled
-  php
-  pha
-  txa
-  pha
-
-  tsx
-  lda $103, x
-  and #%1000 ; dec flag
-  bne fix
-
-  pla
-  tax
-  pla
-  plp
-  rts
-
-fix:
-
-  pla
-  tax
-  pla
+.proc bcd_add
+  sty temp_z
+  ldy temp_x
+  lda dec2bin, y
   sta temp_x
-  plp
-
-  lda temp_x
-  and #$0f
+  ldy temp_y
+  lda dec2bin, y
   sta temp_y
   lda temp_x
-  and #$f0
+  adc temp_y
   sta temp_x
-
+  cmp #100
+  bcs over
+  lda #$0
+  sta temp_y
+  jmp ret
+over:
+  sec
+  sbc #100
+  sta temp_x
+  lda #$1
+  sta temp_y
+ret:
+  ldy temp_x
+  lda bin2dec, y
+  sta temp_x
+  ldy temp_z
   lda temp_y
-  cmp #$09
-  bcc l_ok
-  clc
-  adc #$06
-  sta temp_y
-  bcc l_ok
-  inc temp_x
-
-l_ok:
+  cmp #$1
   lda temp_x
-  cmp #$90
-  bcc h_ok
-  clc
-  adc #$60
-  sta temp_x
-h_ok:
   rts
 .endproc
 
