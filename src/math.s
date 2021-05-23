@@ -4336,10 +4336,10 @@ e2max:
 ;
 ;   general error handler
 ;
-;   returns error string in w3 and executes 'rts' instruction
+;   returns error string in w3 and enters loop
 ;   NOTE: was brk, maybe rethink later
 .proc errhndlr
-  rts
+: jmp :-
 .endproc
 
 ;
