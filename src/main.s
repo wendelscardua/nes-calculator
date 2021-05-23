@@ -1,7 +1,6 @@
 .include "audio-data.inc"
 .include "calculator.inc"
 .include "constants.inc"
-.include "famitone5.inc"
 .include "graphics.inc"
 .include "irq.inc"
 .include "macros.inc"
@@ -50,20 +49,6 @@ clear_ram:
   STA rng_seed+1
 
   SCREEN_ON
-
-  LDX #<music_data
-  LDY #>music_data
-  LDA #1
-  JSR FamiToneInit
-
-  ; init FamiTone SFX
-  LDX #<sfx_data
-  LDY #>sfx_data
-  LDA #1
-  JSR FamiToneSfxInit
-
-  LDA #$ff
-  STA current_song
 
   JSR calculator_init
 

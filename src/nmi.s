@@ -1,5 +1,4 @@
 .include "constants.inc"
-.include "famitone5.inc"
 .include "graphics.inc"
 .include "macros.inc"
 .include "readjoy.inc"
@@ -19,7 +18,6 @@ nmis: .res 1
   BIT PPUSTATUS
   JSR set_scroll
   JSR refresh_oam
-  JSR FamiToneUpdate
   restore_regs
   RTI
 .endproc
