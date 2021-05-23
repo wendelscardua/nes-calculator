@@ -118,6 +118,8 @@
 ;   zero page assignments
 ;
 
+.include "temps.inc"
+
 .segment "ZEROPAGE"
 
 tmp1: .res 1
@@ -262,6 +264,59 @@ reg3: .res 8
 reg4: .res 8
 
 .segment "CODE"
+
+.proc bcd_add ; fix result if bcd was enabled
+  php
+  pha
+  txa
+  pha
+
+  tsx
+  lda $103, x
+  and #%1000 ; dec flag
+  bne fix
+
+  pla
+  tax
+  pla
+  plp
+  rts
+
+fix:
+
+  pla
+  tax
+  pla
+  sta temp_x
+  plp
+
+  lda temp_x
+  and #$0f
+  sta temp_y
+  lda temp_x
+  and #$f0
+  sta temp_x
+
+  lda temp_y
+  cmp #$09
+  bcc l_ok
+  clc
+  adc #$06
+  sta temp_y
+  bcc l_ok
+  inc temp_x
+
+l_ok:
+  lda temp_x
+  cmp #$90
+  bcc h_ok
+  clc
+  adc #$60
+  sta temp_x
+h_ok:
+  rts
+.endproc
+
 ;
 ;   main floating point math package
 ;
