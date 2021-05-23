@@ -4478,7 +4478,8 @@ hex2asc:
 .byte '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
 .byte "0123456789ABCDEF"
 
-.segment "BSS"
+.segment "MATH"
+.align $100
 mtbl: .res 16
 mtbl1: .res 16
 mtbl2: .res 16*8
