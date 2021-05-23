@@ -62,7 +62,7 @@
   jsr copy2w
 
   ; bugged:
-  ;  frac, pow, log10, log2, loge, asec
+  ;  pow, log10, log2, loge, asec
   ;  acsc, acot, asinh, acosh, atanh, acsch, asech, acoth
   ldx #operations::frac
   jsr calc
