@@ -562,6 +562,7 @@ cxp1:
 ; copy number from (ptr1) to (ptr2)
 ; enter with src register page in 'y', src register offset in 'a',
 ;   dest register offset in 'x' (assumed destination page is for 'wx' regs).
+.export copy2w
 .proc copy2w
   sty ptr1+1
   sta ptr1
@@ -4414,6 +4415,29 @@ mtbl1: .res 16
 mtbl2: .res 16*8
 
 .segment "RODATA"
+.export zero
+.export ln2
+.export ln10
+.export iln10
+.export exp0
+.export sqt2
+.export pi
+.export twopi
+.export sqp5
+.export invpi
+.export i2pi
+.export pio2
+.export npio2
+.export tpio2
+.export pio4
+.export unit
+.export half
+.export nrpi2
+.export hnth
+.export ovferr
+.export rngerr
+.export dmnerr
+.export dvzerr
 ;
 ;   miscellaneous constants in floating
 ;   point format
