@@ -72,5 +72,26 @@
 .endproc
 
 .segment "RODATA"
-
 nametable: .incbin "../assets/nametables/main.rle"
+
+.enum metatiles
+  zero
+  one
+  two
+  three
+  four
+  five
+  six
+  seven
+  eight
+  nine
+  negative
+  decimal
+  empty
+.endenum
+
+;                    0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   -,   .,   _
+metatile_ul: .byte $10, $01, $16, $16, $1c, $20, $20, $22, $20, $20, $23, $01, $01
+metatile_ur: .byte $11, $14, $17, $17, $1d, $21, $21, $11, $17, $17, $24, $01, $01
+metatile_dl: .byte $12, $01, $18, $1a, $1e, $1a, $18, $01, $18, $1a, $25, $27, $01
+metatile_dr: .byte $13, $15, $19, $1b, $1f, $1b, $1b, $15, $1b, $1b, $26, $28, $01
