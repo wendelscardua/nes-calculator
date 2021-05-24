@@ -61,7 +61,7 @@ forever:
     STA PPUMASK
   .endif
   JSR readjoy
-  JSR input_handler
+  JSR calculator_io
   JSR rand
   .ifdef DEBUG
     LDA #%00011110  ; no tint
@@ -70,9 +70,6 @@ forever:
   JMP forever
 .endproc
 
-.proc input_handler
-  RTS
-.endproc
 
 .segment "VECTORS"
 .addr nmi_handler, reset_handler, irq_handler

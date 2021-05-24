@@ -1,6 +1,8 @@
 .include "graphics.inc"
 .include "math.inc"
 .include "nmi.inc"
+.include "readjoy.inc"
+.include "temps.inc"
 .include "unrle.inc"
 .include "vram-buffer.inc"
 
@@ -29,6 +31,8 @@ mantissa_digit: .res 1
 mantissa_nibble: .res 1
 decimal_point_active: .res 1
 
+cursor_row: .res 1
+cursor_column: .res 1
 
 .segment "CODE"
 
@@ -92,11 +96,105 @@ decimal_point_active: .res 1
   ;
   ;  ldx #operations::acot
   ;  jsr calc
+
+  LDA #4
+  STA cursor_row
+  LDA #3
+  STA cursor_column
+
   RTS
 .endproc
 
 .export calculator_io
 .proc calculator_io
+  LDA pressed_buttons
+  AND #BUTTON_UP
+  BEQ :+
+  LDA cursor_row
+  BEQ :+
+  DEC cursor_row
+:
+  LDA pressed_buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+  LDA cursor_row
+  CMP #4
+  BEQ :+
+  INC cursor_row
+:
+  LDA pressed_buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+  LDA cursor_column
+  BEQ :+
+  DEC cursor_column
+:
+  LDA pressed_buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+  LDA cursor_column
+  CMP #6
+  BEQ :+
+  INC cursor_column
+:
+
+  JSR render_cursor
+  RTS
+.endproc
+
+.proc render_cursor
+  JSR reset_sprite_counter
+
+  LDA cursor_row
+  ASL
+  ASL
+  ASL
+  ORA cursor_column
+  TAY
+  LDA cursor_to_index, Y
+  TAY
+
+  LDA cursor_x0, Y
+  STA metasprite_x
+  LDA cursor_y0, Y
+  STA metasprite_y
+  STY temp_y
+  LDX #$00
+  LDY #$01
+  JSR draw_sprite
+  LDY temp_y
+
+  LDA cursor_x1, Y
+  STA metasprite_x
+  LDA cursor_y0, Y
+  STA metasprite_y
+  STY temp_y
+  LDX #$00
+  LDY #$01|OAM_FLIP_H
+  JSR draw_sprite
+  LDY temp_y
+
+  LDA cursor_x0, Y
+  STA metasprite_x
+  LDA cursor_y1, Y
+  STA metasprite_y
+  STY temp_y
+  LDX #$00
+  LDY #$01|OAM_FLIP_V
+  JSR draw_sprite
+  LDY temp_y
+
+  LDA cursor_x1, Y
+  STA metasprite_x
+  LDA cursor_y1, Y
+  STA metasprite_y
+  STY temp_y
+  LDX #$00
+  LDY #$01|OAM_FLIP_H|OAM_FLIP_V
+  JSR draw_sprite
+  LDY temp_y
+
+  JSR erase_remaining_sprites
   RTS
 .endproc
 
@@ -241,3 +339,57 @@ metatile_ul: .byte $10, $01, $16, $16, $1c, $20, $20, $22, $20, $20, $23, $01, $
 metatile_ur: .byte $11, $14, $17, $17, $1d, $21, $21, $11, $17, $17, $24, $01, $01
 metatile_dl: .byte $12, $01, $18, $1a, $1e, $1a, $18, $01, $18, $1a, $25, $27, $01
 metatile_dr: .byte $13, $15, $19, $1b, $1f, $1b, $1b, $15, $1b, $1b, $26, $28, $01
+
+cursor_to_index:
+.repeat 5, row
+  .repeat 8, column
+    .if column = 7
+      .byte $00
+    .else
+      .byte row * 7 + column
+    .endif
+  .endrepeat
+.endrepeat
+
+cursor_x0:
+.repeat 5
+  .byte $10, $40, $80, $98, $b0, $c8, $e0
+.endrepeat
+cursor_x1:
+.repeat 5
+  .byte $38, $68, $90, $a8, $c0, $d8, $f0
+.endrepeat
+cursor_y0:
+.repeat 7
+  .byte $40
+.endrepeat
+.repeat 7
+  .byte $58
+.endrepeat
+.repeat 7
+  .byte $70
+.endrepeat
+.repeat 7
+  .byte $88
+.endrepeat
+.repeat 6
+  .byte $a0
+.endrepeat
+.byte $88
+cursor_y1:
+.repeat 7
+  .byte $50
+.endrepeat
+.repeat 7
+  .byte $68
+.endrepeat
+.repeat 7
+  .byte $80
+.endrepeat
+.repeat 6
+  .byte $98
+.endrepeat
+.byte $b0
+.repeat 7
+  .byte $b0
+.endrepeat
