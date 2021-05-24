@@ -645,6 +645,24 @@ cxp1:
   rts
 .endproc
 
+; copy number from (ptr1) to (ptr2)
+; enter with dest register page in 'y', dest register offset in 'a',
+;   src register offset in 'x' (assumed src page is for 'wx' regs).
+.export copyw2
+.proc copyw2
+  sty ptr1+1
+  sta ptr1
+  stx ptr2
+  lda #>w1    ; get page used for working registers
+  sta ptr2+1
+  ldy #7
+: lda (ptr2),y
+  sta (ptr1),y
+  dey
+  bpl :-
+  rts
+.endproc
+
 .proc addrarb
   ldx #reglen-2  ; add previously aligned 'ra' to 'rb', result in 'rb'
   clc

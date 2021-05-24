@@ -51,6 +51,7 @@
 
   .import calc
   .import copy2w
+  .import copyw2
 
   .segment "RODATA"
 
