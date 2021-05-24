@@ -26,6 +26,7 @@
 
 accumulator: .res 8
 input: .res 8
+memory: .res 8
 operator: .res 1
 mantissa_digit: .res 1
 mantissa_nibble: .res 1
@@ -137,8 +138,82 @@ cursor_column: .res 1
   BEQ :+
   INC cursor_column
 :
-
   JSR render_cursor
+
+  LDA pressed_buttons
+  AND #BUTTON_A
+  JSR activate_selection
+  RTS
+.endproc
+
+.proc activate_selection
+  LDA cursor_row
+  ASL
+  ASL
+  ASL
+  ORA cursor_column
+  TAY
+  LDA cursor_to_index, Y
+  TAY
+.endproc
+
+.proc binary_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc unary_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc pct_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc clear_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc digit_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc decimal_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc delete_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc compute_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc mc_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc mr_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc mplus_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc mminus_button
+  BRK ; not implemented
   RTS
 .endproc
 
@@ -393,3 +468,49 @@ cursor_y1:
 .repeat 7
   .byte $b0
 .endrepeat
+
+.linecont +
+.define button_callbacks unary_button-1, \
+                         binary_button-1, \
+                         pct_button-1, \
+                         clear_button-1, \
+                         unary_button-1, \
+                         binary_button-1, \
+                         binary_button-1, \
+                         unary_button-1, \
+                         unary_button-1, \
+                         mc_button-1, \
+                         digit_button-1, \
+                         digit_button-1, \
+                         digit_button-1, \
+                         binary_button-1, \
+                         unary_button-1, \
+                         unary_button-1, \
+                         mr_button-1, \
+                         digit_button-1, \
+                         digit_button-1, \
+                         digit_button-1, \
+                         binary_button-1, \
+                         unary_button-1, \
+                         unary_button-1, \
+                         mplus_button-1, \
+                         digit_button-1, \
+                         digit_button-1, \
+                         digit_button-1, \
+                         compute_button-1, \
+                         unary_button-1, \
+                         unary_button-1, \
+                         mminus_button-1, \
+                         digit_button-1, \
+                         decimal_button-1, \
+                         delete_button-1, \
+                         compute_button-1
+button_callbacks_l: .lobytes button_callbacks
+button_callbacks_h: .hibytes button_callbacks
+
+; layout
+; exp pow   %  C +/- /  *
+; sqr 1/x   mc 7  8  9  -
+; sin cos   mr 4  5  6  +
+; sec csc   m+ 1  2  3  =
+; tan cot   m- 0  . del =
