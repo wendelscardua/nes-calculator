@@ -289,21 +289,15 @@ reg4: .res 8
 
 .proc bcd_add
   php
-  stx temp_z ; save x
-  tsx
-  lda $101, x
+  pla
   and #%1000 ; decimal flag
   bne bcd_mode
   ; bin mode
-  ldx temp_z ; restore x
-  plp
   lda temp_x
   adc temp_y
   rts
 
 bcd_mode:
-  ldx temp_z ; restore x
-  plp
   sty temp_z
   ldy temp_x
   lda dec2bin, y
@@ -338,22 +332,15 @@ ret:
 
 .proc bcd_sub
   php
-  stx temp_z ; save x
-  tsx
-  lda $101, x
+  pla
   and #%1000 ; decimal flag
   bne bcd_mode
   ; bin mode
-  ldx temp_z ; restore x
-  plp
   lda temp_x
   sbc temp_y
   rts
 
 bcd_mode:
-  ldx temp_z ; restore x
-  plp
-
   sty temp_z
   ldy temp_x
   lda dec2bin, y
