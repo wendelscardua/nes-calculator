@@ -118,6 +118,7 @@
 ;   zero page assignments
 ;
 
+.include "math-defs.inc"
 .include "temps.inc"
 
 .segment "ZEROPAGE"
@@ -265,28 +266,7 @@ reg4: .res 8
 
 .segment "CODE"
 
-.macro bcd_adc param, indirect
-  sta temp_x
-  .ifnblank indirect
-    lda param, indirect
-  .else
-    lda param
-  .endif
-  sta temp_y
-  jsr bcd_add
-.endmacro
-
-.macro bcd_sbc param, indirect
-  sta temp_x
-  .ifnblank indirect
-    lda param, indirect
-  .else
-    lda param
-  .endif
-  sta temp_y
-  jsr bcd_sub
-.endmacro
-
+.export bcd_add
 .proc bcd_add
   php
   pla
@@ -330,6 +310,7 @@ ret:
   rts
 .endproc
 
+.export bcd_sub
 .proc bcd_sub
   php
   pla

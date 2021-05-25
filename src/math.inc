@@ -1,6 +1,8 @@
 .ifndef _MATH_INC_
   _MATH_INC_ = 1
 
+  .include "math-defs.inc"
+
   .segment "MATH"
 
   .import w1, w2, w3, w4
@@ -52,6 +54,8 @@
   .import calc
   .import copy2w
   .import copyw2
+  .import bcd_add
+  .import bcd_sub
 
   .segment "RODATA"
 

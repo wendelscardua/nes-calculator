@@ -216,11 +216,29 @@ cursor_column: .res 1
   LDA mantissa_nibble
   BEQ :+
   DEC mantissa_nibble
-  JSR refresh_input
+  JMP update_exp
   RTS
 :
   INC mantissa_nibble
   INC mantissa_digit
+update_exp:
+  LDA decimal_point_active
+  BNE :+
+
+  LDA mantissa_digit
+  BEQ :+
+
+  SED
+  CLC
+  LDA input+1
+  bcd_adc #$01
+  STA input+1
+  LDA input
+  bcd_adc #$00
+  STA input
+  CLD
+
+:
   JSR refresh_input
   RTS
 .endproc
