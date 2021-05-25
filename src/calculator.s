@@ -200,7 +200,41 @@ inverse_hyperbolic:
 
 .proc binary_button
   JSR get_operation
-  BRK ; not implemented
+  PHA
+  ; copy input to w2
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w2
+  JSR copy2w
+
+  JSR clear_input
+
+  ; pop stack
+  SEC
+  LDA input_ptr
+  SBC #8
+  STA input_ptr
+  LDA input_ptr+1
+  SBC #0
+  STA input_ptr+1
+
+  ; copy input to w1
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w1
+  JSR copy2w
+
+  ; execute operation
+  PLA
+  TAX
+  JSR calc
+  ; copy w3 to input
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w3
+  JSR copyw2
+  JSR dirty_input
+  JSR refresh_display
   RTS
 .endproc
 
