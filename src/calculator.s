@@ -32,6 +32,8 @@ mantissa_digit: .res 1
 mantissa_nibble: .res 1
 decimal_point_active: .res 1
 
+inverse_and_hyperbolic_status: .res 1
+
 cursor_row: .res 1
 cursor_column: .res 1
 
@@ -83,6 +85,9 @@ cursor_column: .res 1
 
   JSR clear_accumulator
   JSR clear_input
+
+  LDA #$00
+  STA inverse_and_hyperbolic_status
 
   ;  testing
   ;  lda #<pi
@@ -173,6 +178,11 @@ cursor_column: .res 1
 .endproc
 
 .proc clear_button
+  BRK ; not implemented
+  RTS
+.endproc
+
+.proc square_button
   BRK ; not implemented
   RTS
 .endproc
@@ -477,7 +487,7 @@ cursor_y1:
                          unary_button-1, \
                          binary_button-1, \
                          binary_button-1, \
-                         unary_button-1, \
+                         square_button-1, \
                          unary_button-1, \
                          mc_button-1, \
                          digit_button-1, \
@@ -507,6 +517,41 @@ cursor_y1:
                          compute_button-1
 button_callbacks_l: .lobytes button_callbacks
 button_callbacks_h: .hibytes button_callbacks
+
+digit_per_index:
+.byte 0, 0, 0, 0, 0, 0, 0
+.byte 0, 0, 0, 7, 8, 9, 0
+.byte 0, 0, 0, 4, 5, 6, 0
+.byte 0, 0, 0, 1, 2, 3, 0
+.byte 0, 0, 0, 0, 0, 0, 0
+
+operation_per_index:
+.byte operations::exp, operations::pow, 0, 0, operations::chs, operations::div, operations::mul
+.byte 0, operations::inv, 0, 0, 0, 0, operations::sub
+.byte operations::sin, operations::cos, 0, 0, 0, 0, operations::add
+.byte operations::sec_, operations::csc, 0, 0, 0, 0, 0
+.byte operations::tan, operations::cot, 0, 0, 0, 0, 0
+
+inverse_operation_per_index:
+.byte operations::loge, operations::pow, 0, 0, operations::chs, operations::div, operations::mul
+.byte 0, operations::inv, 0, 0, 0, 0, operations::sub
+.byte operations::asin, operations::acos, 0, 0, 0, 0, operations::add
+.byte operations::asec, operations::acsc, 0, 0, 0, 0, 0
+.byte operations::atan, operations::acot, 0, 0, 0, 0, 0
+
+hyperbolic_operation_per_index:
+.byte operations::exp, operations::pow, 0, 0, operations::chs, operations::div, operations::mul
+.byte 0, operations::inv, 0, 0, 0, 0, operations::sub
+.byte operations::sinh, operations::cosh, 0, 0, 0, 0, operations::add
+.byte operations::sech, operations::csch, 0, 0, 0, 0, 0
+.byte operations::tanh, operations::coth, 0, 0, 0, 0, 0
+
+inverse_hyperbolic_operation_per_index:
+.byte operations::loge, operations::pow, 0, 0, operations::chs, operations::div, operations::mul
+.byte 0, operations::inv, 0, 0, 0, 0, operations::sub
+.byte operations::asinh, operations::acosh, 0, 0, 0, 0, operations::add
+.byte operations::asech, operations::acsch, 0, 0, 0, 0, 0
+.byte operations::atanh, operations::acoth, 0, 0, 0, 0, 0
 
 ; layout
 ; exp pow   %  C +/- /  *
