@@ -244,7 +244,8 @@ update_exp:
 .endproc
 
 .proc decimal_button
-  BRK ; not implemented
+  LDA #$01
+  STA decimal_point_active
   RTS
 .endproc
 
