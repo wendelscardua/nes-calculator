@@ -221,6 +221,7 @@ inverse_hyperbolic:
   LDY input_ptr+1
   LDX #<w3
   JSR copyw2
+  JSR dirty_input
   JSR refresh_display
   RTS
 .endproc
@@ -418,6 +419,14 @@ update_exp:
   LDA #$00
   STA mantissa_digit
 
+  RTS
+.endproc
+
+.proc dirty_input ; move "cursor" to end of number (usually a result)
+  LDA #$06
+  STA mantissa_digit
+  LDA #$00
+  STA mantissa_nibble
   RTS
 .endproc
 
