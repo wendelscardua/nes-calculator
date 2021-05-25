@@ -24,10 +24,8 @@
   empty
 .endenum
 
-accumulator: .res 8
-input: .res 8
+input_ptr: .res 2
 memory: .res 8
-operator: .res 1
 mantissa_digit: .res 1
 mantissa_nibble: .res 1
 decimal_point_active: .res 1
@@ -36,6 +34,10 @@ inverse_and_hyperbolic_status: .res 1
 
 cursor_row: .res 1
 cursor_column: .res 1
+
+.segment "BSS"
+
+input_stack: .res 64
 
 .segment "CODE"
 
@@ -83,8 +85,7 @@ cursor_column: .res 1
   LDX #FADE_DELAY
   JSR wait_frames
 
-  JSR clear_accumulator
-  JSR clear_input
+  JSR clear_stack
 
   LDA #$00
   STA inverse_and_hyperbolic_status
@@ -107,6 +108,9 @@ cursor_column: .res 1
   STA cursor_row
   LDA #3
   STA cursor_column
+
+  JSR clear_input
+  JSR refresh_display
 
   RTS
 .endproc
@@ -196,13 +200,15 @@ cursor_column: .res 1
 .endproc
 
 .proc digit_button
-  LDX mantissa_digit
-  CPX #6
+  TYA
+  TAX
+  LDY mantissa_digit
+  CPY #6
   BNE :+
   ; TODO maybe beep ?
   RTS
 :
-  LDA digit_per_index, Y
+  LDA digit_per_index, X
   STA temp_x
   LDA mantissa_nibble
   BEQ :+
@@ -210,8 +216,10 @@ cursor_column: .res 1
     ASL temp_x
   .endrepeat
 : LDA temp_x
-  ORA input+2, X
-  STA input+2, X
+  INY
+  INY
+  ORA (input_ptr), Y
+  STA (input_ptr), Y
 
   LDA mantissa_nibble
   BEQ :+
@@ -230,16 +238,18 @@ update_exp:
 
   SED
   CLC
-  LDA input+1
+  LDY #$01
+  LDA (input_ptr), Y
   bcd_adc #$01
-  STA input+1
-  LDA input
+  STA (input_ptr), Y
+  DEY
+  LDA (input_ptr), Y
   bcd_adc #$00
-  STA input
+  STA (input_ptr), Y
   CLD
 
 :
-  JSR refresh_input
+  JSR refresh_display
   RTS
 .endproc
 
@@ -254,8 +264,16 @@ update_exp:
   RTS
 .endproc
 
-.proc compute_button
-  BRK ; not implemented
+.proc input_button ; pushes value to stack
+  ; TODO: avoid stack overflow
+  LDA input_ptr
+  CLC
+  ADC #8
+  STA input_ptr
+  BCC :+
+  INC input_ptr+1
+:
+  JSR clear_input
   RTS
 .endproc
 
@@ -335,21 +353,25 @@ update_exp:
   RTS
 .endproc
 
-.proc clear_accumulator
-  LDX #7
-  LDA #$00
-: STA accumulator, X
+.proc clear_stack
+  LDX #63
+  LDA #0
+: STA input_stack, X
   DEX
   BPL :-
-  STA operator
+
+  LDA #<input_stack
+  STA input_ptr
+  LDA #>input_stack
+  STA input_ptr+1
   RTS
 .endproc
 
 .proc clear_input
-  LDX #7
+  LDY #7
   LDA #$00
-: STA input, X
-  DEX
+: STA (input_ptr), Y
+  DEY
   BPL :-
   STA decimal_point_active
   LDA #$01
@@ -357,11 +379,12 @@ update_exp:
   LDA #$00
   STA mantissa_digit
 
-  JSR refresh_input
   RTS
 .endproc
 
 .macro push_upper_nibble value
+  TYA
+  PHA
   LDA value
   AND #$f0
   .repeat 4
@@ -370,17 +393,23 @@ update_exp:
   TAY
   vb_push {metatile_l, Y}
   vb_push {metatile_r, Y}
+  PLA
+  TAY
 .endmacro
 
 .macro push_lower_nibble value
+  TYA
+  PHA
   LDA value
   AND #$0f
   TAY
   vb_push {metatile_l, Y}
   vb_push {metatile_r, Y}
+  PLA
+  TAY
 .endmacro
 
-.macro refresh_number_half number, half
+.macro refresh_number_half half
   .if half = 0
     metatile_l = metatile_ul
     metatile_r = metatile_ur
@@ -391,18 +420,13 @@ update_exp:
     ppu_ptr = $a0a2
   .endif
 
-  .if number = 0
-    value := input
-  .else
-    value := accumulator
-  .endif
-
   vb_alloc {(2+14*2+2)}
 
   vb_ppu_addr ppu_ptr
 
   ; mantissa sign
-  LDA value
+  LDY #$00
+  LDA (input_ptr), Y
   AND #%10000000
   BNE negative_mantissa
 
@@ -414,21 +438,24 @@ negative_mantissa:
   vb_push {metatile_r+metatiles::negative}
 mantissa:
 
-  push_upper_nibble {value+2}
+  LDY #$02
+  push_upper_nibble {(input_ptr), Y}
 
   vb_push {metatile_l+metatiles::decimal}
   vb_push {metatile_r+metatiles::decimal}
 
-  push_lower_nibble {value+2}
+  push_lower_nibble {(input_ptr), Y}
 
   ; skip last 2 numbers, they don't fit
-  .repeat 3, index
-    push_upper_nibble {value+3+index}
-    push_lower_nibble {value+3+index}
+  .repeat 3
+    INY
+    push_upper_nibble {(input_ptr), Y}
+    push_lower_nibble {(input_ptr), Y}
   .endrepeat
 
   ; exponent sign
-  LDA value
+  LDY #$00
+  LDA (input_ptr), Y
   AND #%01000000
   BNE negative_exponent
 
@@ -439,31 +466,21 @@ negative_exponent:
   vb_push {metatile_l+metatiles::negative}
   vb_push {metatile_r+metatiles::negative}
 exponent:
-  push_lower_nibble {value}
-  push_upper_nibble {value+1}
-  push_lower_nibble {value+1}
+  push_lower_nibble {(input_ptr), Y}
+  INY
+  push_upper_nibble {(input_ptr), Y}
+  push_lower_nibble {(input_ptr), Y}
 
   vb_push #$ff
   vb_close
 .endmacro
 
-.proc refresh_input
+.proc refresh_display
   .scope upper
-    refresh_number_half 0, 0
+    refresh_number_half 0
   .endscope
   .scope lower
-    refresh_number_half 0, 1
-  .endscope
-  RTS
-.endproc
-
-
-.proc refresh_accumulator
-  .scope upper
-    refresh_number_half 1, 0
-  .endscope
-  .scope lower
-    refresh_number_half 1, 1
+    refresh_number_half 1
   .endscope
   RTS
 .endproc
@@ -559,14 +576,14 @@ cursor_y1:
                          digit_button-1, \
                          digit_button-1, \
                          digit_button-1, \
-                         compute_button-1, \
+                         input_button-1, \
                          unary_button-1, \
                          unary_button-1, \
                          mminus_button-1, \
                          digit_button-1, \
                          decimal_button-1, \
                          delete_button-1, \
-                         compute_button-1
+                         input_button-1
 button_callbacks_l: .lobytes button_callbacks
 button_callbacks_h: .hibytes button_callbacks
 
