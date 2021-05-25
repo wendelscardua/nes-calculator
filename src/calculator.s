@@ -164,12 +164,12 @@ input_stack: .res 64
   ASL
   ASL
   ORA cursor_column
-  TAY
-  LDA cursor_to_index, Y
-  TAY
-  LDA button_callbacks_h, Y
+  TAX
+  LDA cursor_to_index, X
+  TAX
+  LDA button_callbacks_h, X
   PHA
-  LDA button_callbacks_l, Y
+  LDA button_callbacks_l, X
   PHA
   RTS
 .endproc
@@ -180,7 +180,7 @@ input_stack: .res 64
 .endproc
 
 .proc unary_button
-  BRK ; not implemented
+
   RTS
 .endproc
 
@@ -200,8 +200,6 @@ input_stack: .res 64
 .endproc
 
 .proc digit_button
-  TYA
-  TAX
   LDY mantissa_digit
   CPY #6
   BNE :+
