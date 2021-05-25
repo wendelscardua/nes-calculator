@@ -174,13 +174,54 @@ input_stack: .res 64
   RTS
 .endproc
 
+.proc get_operation
+  LDA inverse_and_hyperbolic_status
+  BEQ normal
+  CMP #%10
+  BEQ inverse
+  CMP #%01
+  BEQ hyperbolic
+  CMP #%11
+  BEQ inverse_hyperbolic
+  BRK ; unexpected state
+normal:
+  LDA operation_per_index, X
+  RTS
+inverse:
+  LDA inverse_operation_per_index, X
+  RTS
+hyperbolic:
+  LDA hyperbolic_operation_per_index, X
+  RTS
+inverse_hyperbolic:
+  LDA inverse_hyperbolic_operation_per_index, X
+  RTS
+.endproc
+
 .proc binary_button
+  JSR get_operation
   BRK ; not implemented
   RTS
 .endproc
 
 .proc unary_button
-
+  JSR get_operation
+  PHA
+  ; copy input to w1
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w1
+  JSR copy2w
+  ; execute operation
+  PLA
+  TAX
+  JSR calc
+  ; copy w3 to input
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w3
+  JSR copyw2
+  JSR refresh_display
   RTS
 .endproc
 
