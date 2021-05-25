@@ -389,22 +389,70 @@ update_exp:
 .endproc
 
 .proc mc_button
-  BRK ; not implemented
+  LDY #7
+  LDA #0
+: STA memory, Y
+  DEY
+  BPL :-
   RTS
 .endproc
 
 .proc mr_button
-  BRK ; not implemented
+  LDY #7
+: LDA memory, Y
+  STA (input_ptr), Y
+  DEY
+  BPL :-
+  JSR dirty_input
+  JSR refresh_display
   RTS
 .endproc
 
 .proc mplus_button
-  BRK ; not implemented
+  ; copy memory to w1
+  LDA #<memory
+  LDY #>memory
+  LDX #<w1
+  JSR copy2w
+
+  ; copy input to w2
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w2
+  JSR copy2w
+
+  LDX #operations::add
+  JSR calc
+
+  ; copy w3 to memory
+  LDA #<memory
+  LDY #>memory
+  LDX #<w3
+  JSR copyw2
   RTS
 .endproc
 
 .proc mminus_button
-  BRK ; not implemented
+  ; copy memory to w1
+  LDA #<memory
+  LDY #>memory
+  LDX #<w1
+  JSR copy2w
+
+  ; copy input to w2
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w2
+  JSR copy2w
+
+  LDX #operations::sub
+  JSR calc
+
+  ; copy w3 to memory
+  LDA #<memory
+  LDY #>memory
+  LDX #<w3
+  JSR copyw2
   RTS
 .endproc
 
