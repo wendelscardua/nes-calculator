@@ -147,7 +147,10 @@ cursor_column: .res 1
 
   LDA pressed_buttons
   AND #BUTTON_A
+  BEQ :+
   JSR activate_selection
+:
+  ; TODO toggling inv/hyp modes
   RTS
 .endproc
 
@@ -160,6 +163,11 @@ cursor_column: .res 1
   TAY
   LDA cursor_to_index, Y
   TAY
+  LDA button_callbacks_h, Y
+  PHA
+  LDA button_callbacks_l, Y
+  PHA
+  RTS
 .endproc
 
 .proc binary_button
@@ -188,7 +196,32 @@ cursor_column: .res 1
 .endproc
 
 .proc digit_button
-  BRK ; not implemented
+  LDX mantissa_digit
+  CPX #6
+  BNE :+
+  ; TODO maybe beep ?
+  RTS
+:
+  LDA digit_per_index, Y
+  STA temp_x
+  LDA mantissa_nibble
+  BEQ :+
+  .repeat 4
+    ASL temp_x
+  .endrepeat
+: LDA temp_x
+  ORA input+2, X
+  STA input+2, X
+
+  LDA mantissa_nibble
+  BEQ :+
+  DEC mantissa_nibble
+  JSR refresh_input
+  RTS
+:
+  INC mantissa_nibble
+  INC mantissa_digit
+  JSR refresh_input
   RTS
 .endproc
 
