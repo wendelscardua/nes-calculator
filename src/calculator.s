@@ -215,9 +215,9 @@ inverse_hyperbolic:
   LDX #<w2
   JSR copy2w
 
-  JSR clear_input
 
   ; pop stack
+  JSR clear_input
   SEC
   LDA input_ptr
   SBC #8
@@ -268,8 +268,54 @@ inverse_hyperbolic:
   RTS
 .endproc
 
-.proc pct_button
-  BRK ; not implemented
+.proc pct_button ; computes current-value % of previous-value
+  ; copy input to w1
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w1
+  JSR copy2w
+
+  ; copy 100 to w2
+  LDA #<hundred
+  LDY #>hundred
+  LDX #<w2
+  JSR copy2w
+
+  LDX #operations::div
+  JSR calc
+
+  ; copy w3 to w1
+  LDA #<w3
+  LDY #>w3
+  LDX #<w1
+  JSR copy2w
+
+  ; pop stack
+  JSR clear_input
+  SEC
+  LDA input_ptr
+  SBC #8
+  STA input_ptr
+  LDA input_ptr+1
+  SBC #0
+  STA input_ptr+1
+
+  ; copy input to w2
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w2
+  JSR copy2w
+
+  LDX #operations::mul
+  JSR calc
+
+  ; copy w3 to input
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w3
+  JSR copyw2
+  JSR dirty_input
+  JSR refresh_display
   RTS
 .endproc
 
@@ -788,6 +834,8 @@ inverse_hyperbolic_operation_per_index:
 .byte operations::asinh, operations::acosh, 0, 0, 0, 0, operations::add
 .byte operations::asech, operations::acsch, 0, 0, 0, 0, 0
 .byte operations::atanh, operations::acoth, 0, 0, 0, 0, 0
+
+hundred:   .byte $00,$02,$10,$00,$00,$00,$00,$00
 
 ; layout
 ; exp pow   %  C +/- /  *
