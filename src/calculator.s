@@ -118,6 +118,14 @@ input_stack: .res 64
 .export calculator_io
 .proc calculator_io
   LDA pressed_buttons
+  AND #BUTTON_B
+  BEQ :+
+  ; TODO visual feedback
+  LDA inverse_and_hyperbolic_status
+  EOR #%10
+  STA inverse_and_hyperbolic_status
+:
+  LDA pressed_buttons
   AND #BUTTON_UP
   BEQ :+
   LDA cursor_row
@@ -272,7 +280,35 @@ inverse_hyperbolic:
 .endproc
 
 .proc square_button
-  BRK ; not implemented
+  LDA inverse_and_hyperbolic_status
+  AND #%10
+  BEQ square
+  JSR unary_button
+  RTS
+square:
+  ; copy input to w1
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w1
+  JSR copy2w
+  ; copy input to w1
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w2
+  JSR copy2w
+
+  ; multiply
+  LDX #operations::mul
+  JSR calc
+
+  ; copy w3 to input
+  LDA input_ptr
+  LDY input_ptr+1
+  LDX #<w3
+  JSR copyw2
+  JSR dirty_input
+  JSR refresh_display
+
   RTS
 .endproc
 
@@ -686,7 +722,7 @@ operation_per_index:
 
 inverse_operation_per_index:
 .byte operations::loge, operations::pow, 0, 0, operations::chs, operations::div, operations::mul
-.byte 0, operations::inv, 0, 0, 0, 0, operations::sub
+.byte operations::sqrt, operations::inv, 0, 0, 0, 0, operations::sub
 .byte operations::asin, operations::acos, 0, 0, 0, 0, operations::add
 .byte operations::asec, operations::acsc, 0, 0, 0, 0, 0
 .byte operations::atan, operations::acot, 0, 0, 0, 0, 0
@@ -700,7 +736,7 @@ hyperbolic_operation_per_index:
 
 inverse_hyperbolic_operation_per_index:
 .byte operations::loge, operations::pow, 0, 0, operations::chs, operations::div, operations::mul
-.byte 0, operations::inv, 0, 0, 0, 0, operations::sub
+.byte operations::sqrt, operations::inv, 0, 0, 0, 0, operations::sub
 .byte operations::asinh, operations::acosh, 0, 0, 0, 0, operations::add
 .byte operations::asech, operations::acsch, 0, 0, 0, 0, 0
 .byte operations::atanh, operations::acoth, 0, 0, 0, 0, 0
