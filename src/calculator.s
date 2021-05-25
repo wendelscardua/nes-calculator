@@ -266,7 +266,8 @@ inverse_hyperbolic:
 .endproc
 
 .proc clear_button
-  BRK ; not implemented
+  JSR clear_input
+  JSR refresh_display
   RTS
 .endproc
 
