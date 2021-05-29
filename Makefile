@@ -30,6 +30,10 @@ src/graphics.o: src/graphics.s src/*.inc \
 	assets/nametables/*.rle
 	ca65 $< ${CA65_FLAGS}
 
+src/calculator.o: src/calculator.s src/*.inc \
+	assets/nametables/*.rle
+	ca65 $< ${CA65_FLAGS}
+
 %.o: %.s src/*.inc
 	ca65 $< ${CA65_FLAGS}
 
