@@ -24,20 +24,18 @@
   empty
 .endenum
 
-input_ptr: .res 2
+old_input: .res 8
+input: .res 8
 memory: .res 8
 mantissa_digit: .res 1
 mantissa_nibble: .res 1
 decimal_point_active: .res 1
 
 inverse_and_hyperbolic_status: .res 1
+pending_operation: .res 1
 
 cursor_row: .res 1
 cursor_column: .res 1
-
-.segment "BSS"
-
-input_stack: .res 64
 
 .segment "CODE"
 
@@ -85,8 +83,6 @@ input_stack: .res 64
   LDX #FADE_DELAY
   JSR wait_frames
 
-  JSR clear_stack
-
   LDA #$00
   STA inverse_and_hyperbolic_status
 
@@ -111,6 +107,10 @@ input_stack: .res 64
   LDA #3
   STA cursor_column
 
+  LDA #$ff
+  STA pending_operation
+
+  JSR clear_old_input
   JSR clear_input
   JSR refresh_display
 
@@ -188,6 +188,8 @@ input_stack: .res 64
 .endproc
 
 .proc get_operation
+  ; returns math operation for current button
+  ; input: X = button as index
   LDA inverse_and_hyperbolic_status
   BEQ normal
   CMP #%01
@@ -211,43 +213,64 @@ inverse_hyperbolic:
   RTS
 .endproc
 
-.proc binary_button
-  JSR get_operation
-  PHA
-  ; copy input to w2
-  LDA input_ptr
-  LDY input_ptr+1
-  LDX #<w2
-  JSR copy2w
-
-
-  ; pop stack
-  JSR clear_input
-  SEC
-  LDA input_ptr
-  SBC #8
-  STA input_ptr
-  LDA input_ptr+1
-  SBC #0
-  STA input_ptr+1
-
-  ; copy input to w1
-  LDA input_ptr
-  LDY input_ptr+1
+.proc calculate_button
+  ; calculates pending binary operation
+  LDA pending_operation
+  CMP #$ff
+  BNE :+
+  ; no pending operation, return
+  RTS
+:
+  ; copy old input to w1, new input to w2
+  LDA #<old_input
+  LDY #>old_input
   LDX #<w1
   JSR copy2w
 
-  ; execute operation
-  PLA
-  TAX
+  LDA #<input
+  LDY #>input
+  LDX #<w2
+  JSR copy2w
+
+  LDX pending_operation
   JSR calc
-  ; copy w3 to input
-  LDA input_ptr
-  LDY input_ptr+1
+
+  ; copy from w3 to input
+  LDA #<input
+  LDY #>input
   LDX #<w3
   JSR copyw2
-  JSR dirty_input
+
   JSR refresh_display
+
+  LDA #$ff
+  STA pending_operation
+
+  RTS
+.endproc
+
+.proc binary_button
+  LDA pending_operation
+  CMP #$ff
+  BEQ :+
+  TXA
+  PHA
+  JSR calculate_button
+  PLA
+  TAX
+:
+  JSR get_operation
+  STA pending_operation
+
+  ; copy input to old input
+  LDX #7
+: LDA input, X
+  STA old_input, X
+  DEX
+  BPL :-
+
+  JSR clear_input
+
   RTS
 .endproc
 
@@ -255,8 +278,8 @@ inverse_hyperbolic:
   JSR get_operation
   PHA
   ; copy input to w1
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w1
   JSR copy2w
   ; execute operation
@@ -264,8 +287,8 @@ inverse_hyperbolic:
   TAX
   JSR calc
   ; copy w3 to input
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w3
   JSR copyw2
   JSR dirty_input
@@ -274,53 +297,7 @@ inverse_hyperbolic:
 .endproc
 
 .proc pct_button ; computes current-value % of previous-value
-  ; copy input to w1
-  LDA input_ptr
-  LDY input_ptr+1
-  LDX #<w1
-  JSR copy2w
-
-  ; copy 100 to w2
-  LDA #<hundred
-  LDY #>hundred
-  LDX #<w2
-  JSR copy2w
-
-  LDX #operations::div
-  JSR calc
-
-  ; copy w3 to w1
-  LDA #<w3
-  LDY #>w3
-  LDX #<w1
-  JSR copy2w
-
-  ; pop stack
-  JSR clear_input
-  SEC
-  LDA input_ptr
-  SBC #8
-  STA input_ptr
-  LDA input_ptr+1
-  SBC #0
-  STA input_ptr+1
-
-  ; copy input to w2
-  LDA input_ptr
-  LDY input_ptr+1
-  LDX #<w2
-  JSR copy2w
-
-  LDX #operations::mul
-  JSR calc
-
-  ; copy w3 to input
-  LDA input_ptr
-  LDY input_ptr+1
-  LDX #<w3
-  JSR copyw2
-  JSR dirty_input
-  JSR refresh_display
+  BRK ; TODO reimplement
   RTS
 .endproc
 
@@ -338,13 +315,13 @@ inverse_hyperbolic:
   RTS
 square:
   ; copy input to w1
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w1
   JSR copy2w
   ; copy input to w1
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w2
   JSR copy2w
 
@@ -353,8 +330,8 @@ square:
   JSR calc
 
   ; copy w3 to input
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w3
   JSR copyw2
   JSR dirty_input
@@ -380,8 +357,8 @@ square:
 : LDA temp_x
   INY
   INY
-  ORA (input_ptr), Y
-  STA (input_ptr), Y
+  ORA input, Y
+  STA input, Y
 
   LDA mantissa_nibble
   BEQ :+
@@ -401,13 +378,13 @@ update_exp:
   SED
   CLC
   LDY #$01
-  LDA (input_ptr), Y
+  LDA input, Y
   bcd_adc #$01
-  STA (input_ptr), Y
+  STA input, Y
   DEY
-  LDA (input_ptr), Y
+  LDA input, Y
   bcd_adc #$00
-  STA (input_ptr), Y
+  STA input, Y
   CLD
 
 :
@@ -426,19 +403,6 @@ update_exp:
   RTS
 .endproc
 
-.proc input_button ; pushes value to stack
-  ; TODO: avoid stack overflow
-  LDA input_ptr
-  CLC
-  ADC #8
-  STA input_ptr
-  BCC :+
-  INC input_ptr+1
-:
-  JSR clear_input
-  RTS
-.endproc
-
 .proc mc_button
   LDY #7
   LDA #0
@@ -451,7 +415,7 @@ update_exp:
 .proc mr_button
   LDY #7
 : LDA memory, Y
-  STA (input_ptr), Y
+  STA input, Y
   DEY
   BPL :-
   JSR dirty_input
@@ -467,8 +431,8 @@ update_exp:
   JSR copy2w
 
   ; copy input to w2
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w2
   JSR copy2w
 
@@ -491,8 +455,8 @@ update_exp:
   JSR copy2w
 
   ; copy input to w2
-  LDA input_ptr
-  LDY input_ptr+1
+  LDA #<input
+  LDY #>input
   LDX #<w2
   JSR copy2w
 
@@ -563,24 +527,11 @@ update_exp:
   RTS
 .endproc
 
-.proc clear_stack
-  LDX #63
-  LDA #0
-: STA input_stack, X
-  DEX
-  BPL :-
-
-  LDA #<input_stack
-  STA input_ptr
-  LDA #>input_stack
-  STA input_ptr+1
-  RTS
-.endproc
-
 .proc clear_input
+  ; TODO implement All Clear as well
   LDY #7
   LDA #$00
-: STA (input_ptr), Y
+: STA input, Y
   DEY
   BPL :-
   STA decimal_point_active
@@ -588,11 +539,20 @@ update_exp:
   STA mantissa_nibble
   LDA #$00
   STA mantissa_digit
+  RTS
+.endproc
 
+.proc clear_old_input
+  LDY #7
+  LDA #$00
+: STA old_input, Y
+  DEY
+  BPL :-
   RTS
 .endproc
 
 .proc dirty_input ; move "cursor" to end of number (usually a result)
+  ; TODO: use a dirty flag
   LDA #$06
   STA mantissa_digit
   LDA #$00
@@ -644,7 +604,7 @@ update_exp:
 
   ; mantissa sign
   LDY #$00
-  LDA (input_ptr), Y
+  LDA input, Y
   AND #%10000000
   BNE negative_mantissa
 
@@ -657,23 +617,23 @@ negative_mantissa:
 mantissa:
 
   LDY #$02
-  push_upper_nibble {(input_ptr), Y}
+  push_upper_nibble {input, Y}
 
   vb_push {metatile_l+metatiles::decimal}
   vb_push {metatile_r+metatiles::decimal}
 
-  push_lower_nibble {(input_ptr), Y}
+  push_lower_nibble {input, Y}
 
   ; skip last 2 numbers, they don't fit
   .repeat 3
     INY
-    push_upper_nibble {(input_ptr), Y}
-    push_lower_nibble {(input_ptr), Y}
+    push_upper_nibble {input, Y}
+    push_lower_nibble {input, Y}
   .endrepeat
 
   ; exponent sign
   LDY #$00
-  LDA (input_ptr), Y
+  LDA input, Y
   AND #%01000000
   BNE negative_exponent
 
@@ -684,10 +644,10 @@ negative_exponent:
   vb_push {metatile_l+metatiles::negative}
   vb_push {metatile_r+metatiles::negative}
 exponent:
-  push_lower_nibble {(input_ptr), Y}
+  push_lower_nibble {input, Y}
   INY
-  push_upper_nibble {(input_ptr), Y}
-  push_lower_nibble {(input_ptr), Y}
+  push_upper_nibble {input, Y}
+  push_lower_nibble {input, Y}
 
   vb_push #$ff
   vb_close
@@ -860,14 +820,14 @@ cursor_y1:
                          digit_button-1, \
                          digit_button-1, \
                          digit_button-1, \
-                         input_button-1, \
+                         calculate_button-1, \
                          unary_button-1, \
                          unary_button-1, \
                          mminus_button-1, \
                          digit_button-1, \
                          decimal_button-1, \
                          delete_button-1, \
-                         input_button-1
+                         calculate_button-1
 button_callbacks_l: .lobytes button_callbacks
 button_callbacks_h: .hibytes button_callbacks
 
