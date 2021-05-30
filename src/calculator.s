@@ -37,6 +37,9 @@ pending_operation: .res 1
 cursor_row: .res 1
 cursor_column: .res 1
 
+; an input is dirty if it's filled with a value - typing will clear it
+dirty_input: .res 1
+
 .segment "CODE"
 
 .export calculator_init
@@ -241,6 +244,9 @@ inverse_hyperbolic:
   LDX #<w3
   JSR copyw2
 
+  LDA #1
+  STA dirty_input
+
   JSR refresh_display
 
   LDA #$ff
@@ -269,7 +275,8 @@ inverse_hyperbolic:
   DEX
   BPL :-
 
-  JSR clear_input
+  LDA #1
+  STA dirty_input
 
   RTS
 .endproc
@@ -291,7 +298,8 @@ inverse_hyperbolic:
   LDY #>input
   LDX #<w3
   JSR copyw2
-  JSR dirty_input
+  LDA #1
+  STA dirty_input
   JSR refresh_display
   RTS
 .endproc
@@ -334,13 +342,19 @@ square:
   LDY #>input
   LDX #<w3
   JSR copyw2
-  JSR dirty_input
+  LDA #1
+  STA dirty_input
   JSR refresh_display
 
   RTS
 .endproc
 
 .proc digit_button
+  LDA dirty_input
+  BEQ :+
+  JSR clear_input
+:
+
   LDY mantissa_digit
   CPY #6
   BNE :+
@@ -418,7 +432,8 @@ update_exp:
   STA input, Y
   DEY
   BPL :-
-  JSR dirty_input
+  LDA #1
+  STA dirty_input
   JSR refresh_display
   RTS
 .endproc
@@ -539,6 +554,7 @@ update_exp:
   STA mantissa_nibble
   LDA #$00
   STA mantissa_digit
+  STA dirty_input
   RTS
 .endproc
 
@@ -548,15 +564,6 @@ update_exp:
 : STA old_input, Y
   DEY
   BPL :-
-  RTS
-.endproc
-
-.proc dirty_input ; move "cursor" to end of number (usually a result)
-  ; TODO: use a dirty flag
-  LDA #$06
-  STA mantissa_digit
-  LDA #$00
-  STA mantissa_nibble
   RTS
 .endproc
 
