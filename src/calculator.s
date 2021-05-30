@@ -90,6 +90,8 @@ input_stack: .res 64
   LDA #$00
   STA inverse_and_hyperbolic_status
 
+  JSR update_function_buttons
+
   ;  testing
   ;  lda #<pi
   ;  ldy #>pi
@@ -122,8 +124,11 @@ input_stack: .res 64
   BEQ :+
   ; TODO visual feedback
   LDA inverse_and_hyperbolic_status
-  EOR #%10
+  CLC
+  ADC #1
+  AND #%11
   STA inverse_and_hyperbolic_status
+  JSR update_function_buttons
 :
   LDA pressed_buttons
   AND #BUTTON_UP
@@ -695,6 +700,72 @@ exponent:
   .scope lower
     refresh_number_half 1
   .endscope
+  RTS
+.endproc
+
+.proc update_function_buttons
+  ; render exp/sqr or log/sqrt buttons
+  LDA #$21
+  STA ppu_addr+1
+  LDA #$02
+  STA ppu_addr
+  LDA #5
+  STA subscreen_width
+  STA subscreen_height
+  LDA inverse_and_hyperbolic_status
+  AND #%10
+  BNE :+
+  LDA #<exp_sqr_buttons
+  STA subscreen_source_addr
+  LDA #>exp_sqr_buttons
+  STA subscreen_source_addr+1
+  JMP render_first_set
+:
+  LDA #<log_sqrt_buttons
+  STA subscreen_source_addr
+  LDA #>log_sqrt_buttons
+  STA subscreen_source_addr+1
+render_first_set:
+  JSR draw_subscreen
+
+  LDA #$21
+  STA ppu_addr+1
+  LDA #$c2
+  STA ppu_addr
+  LDA #11
+  STA subscreen_width
+  LDA #8
+  STA subscreen_height
+
+  LDA inverse_and_hyperbolic_status
+  BNE :+
+  LDA #<trig_buttons
+  STA subscreen_source_addr
+  LDA #>trig_buttons
+  STA subscreen_source_addr+1
+  JMP render_second_set
+: CMP #%01
+  BNE :+
+  LDA #<hyp_trig_buttons
+  STA subscreen_source_addr
+  LDA #>hyp_trig_buttons
+  STA subscreen_source_addr+1
+  JMP render_second_set
+: CMP #%10
+  BNE :+
+  LDA #<inv_trig_buttons
+  STA subscreen_source_addr
+  LDA #>inv_trig_buttons
+  STA subscreen_source_addr+1
+  JMP render_second_set
+: LDA #<inv_hyp_trig_buttons
+  STA subscreen_source_addr
+  LDA #>inv_hyp_trig_buttons
+  STA subscreen_source_addr+1
+
+render_second_set:
+  JSR draw_subscreen
+
   RTS
 .endproc
 
