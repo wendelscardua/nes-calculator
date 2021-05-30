@@ -190,9 +190,9 @@ input_stack: .res 64
 .proc get_operation
   LDA inverse_and_hyperbolic_status
   BEQ normal
-  CMP #%10
-  BEQ inverse
   CMP #%01
+  BEQ inverse
+  CMP #%10
   BEQ hyperbolic
   CMP #%11
   BEQ inverse_hyperbolic
@@ -332,7 +332,7 @@ inverse_hyperbolic:
 
 .proc square_button
   LDA inverse_and_hyperbolic_status
-  AND #%10
+  AND #%01
   BEQ square
   JSR unary_button
   RTS
@@ -713,7 +713,7 @@ exponent:
   STA subscreen_width
   STA subscreen_height
   LDA inverse_and_hyperbolic_status
-  AND #%10
+  AND #%01
   BNE :+
   LDA #<exp_sqr_buttons
   STA subscreen_source_addr
@@ -746,16 +746,16 @@ render_first_set:
   JMP render_second_set
 : CMP #%01
   BNE :+
-  LDA #<hyp_trig_buttons
+  LDA #<inv_trig_buttons
   STA subscreen_source_addr
-  LDA #>hyp_trig_buttons
+  LDA #>inv_trig_buttons
   STA subscreen_source_addr+1
   JMP render_second_set
 : CMP #%10
   BNE :+
-  LDA #<inv_trig_buttons
+  LDA #<hyp_trig_buttons
   STA subscreen_source_addr
-  LDA #>inv_trig_buttons
+  LDA #>hyp_trig_buttons
   STA subscreen_source_addr+1
   JMP render_second_set
 : LDA #<inv_hyp_trig_buttons
