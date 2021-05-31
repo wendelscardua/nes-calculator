@@ -125,7 +125,6 @@ dirty_input: .res 1
   LDA pressed_buttons
   AND #BUTTON_B
   BEQ :+
-  ; TODO visual feedback
   LDA inverse_and_hyperbolic_status
   CLC
   ADC #1
@@ -170,7 +169,6 @@ dirty_input: .res 1
   BEQ :+
   JSR activate_selection
 :
-  ; TODO toggling inv/hyp modes
   RTS
 .endproc
 
