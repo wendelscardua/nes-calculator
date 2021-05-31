@@ -4337,7 +4337,7 @@ e2max:
 ;   returns error string in w3 and enters loop
 ;   NOTE: was brk, maybe rethink later
 .proc errhndlr
-: jmp :-
+  rts
 .endproc
 
 ;

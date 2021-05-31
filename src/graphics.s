@@ -99,7 +99,7 @@ row_loop:
   DEC subscreen_height
   BMI end_row_loop
 
-  vb_alloc (20 + 2 + 2)
+  vb_alloc (24 + 2 + 2)
 
   LDA ppu_addr+1
   EOR #$80

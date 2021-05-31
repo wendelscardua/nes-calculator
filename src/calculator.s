@@ -716,6 +716,35 @@ exponent:
   .scope lower
     refresh_number_half 1
   .endscope
+
+  LDA input
+  AND #%00100000 ; bit 5 tells if there was an error
+  BEQ :+
+  JSR error_handler
+: RTS
+.endproc
+
+.proc error_handler
+  LDA #1
+  STA dirty_input
+
+  LDA #$20
+  STA ppu_addr+1
+  LDA #$82
+  STA ppu_addr
+
+  LDA #22
+  STA subscreen_width
+  LDA #2
+  STA subscreen_height
+
+  LDA #<lcd_error
+  STA subscreen_source_addr
+  LDA #>lcd_error
+  STA subscreen_source_addr+1
+
+  JSR draw_subscreen
+
   RTS
 .endproc
 
@@ -975,6 +1004,12 @@ inv_hyp_trig_buttons: ; 11 x 8
 .byte $eb,$ec,$ec,$ec,$ec,$ed,$eb,$ec,$ec,$ec,$ec
 .byte $de,$e1,$9e,$e2,$94,$e9,$de,$df,$9e,$e6,$94
 .byte $67,$e5,$a0,$b9,$97,$ea,$67,$e7,$a8,$e8,$97
+
+lcd_error: ; 22x2
+.byte $01,$01,$20,$21,$23,$24,$23,$24,$23,$24,$23,$24,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
+.byte $01,$01,$18,$19,$4d,$26,$4d,$26,$18,$1b,$4d,$26,$01,$01,$01,$01,$01,$01,$01,$01,$01,$01
+
+
 
 ; layout
 ; exp pow   %  C +/- /  *
