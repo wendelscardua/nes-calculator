@@ -304,8 +304,59 @@ inverse_hyperbolic:
   RTS
 .endproc
 
-.proc pct_button ; computes current-value % of previous-value
-  BRK ; TODO reimplement
+.proc pct_button
+  ; if pending add/subtract operation, input = input * 0.01 * old_input
+  ; else input = input * 0.01
+
+  ; copy input to w1
+  LDA #<input
+  LDY #>input
+  LDX #<w1
+  JSR copy2w
+
+  ; copy hnth (1/100) to w2
+  LDA #<hnth
+  LDY #>hnth
+  LDX #<w2
+  JSR copy2w
+
+  ; w3 = w1 * w2
+  LDX #operations::mul
+  JSR calc
+
+  LDA pending_operation
+  CMP #operations::add
+  BEQ compute_relative
+  CMP #operations::sub
+  BEQ compute_relative
+  JMP update_input
+compute_relative:
+  ; copy w3 to w1
+  LDA #<w3
+  LDY #>w3
+  LDX #<w1
+  JSR copy2w
+
+  ; copy old input to w2
+  LDA #<old_input
+  LDY #>old_input
+  LDX #<w2
+  JSR copy2w
+
+  LDX #operations::mul
+  JSR calc
+
+update_input:
+  ; copy w3 to input
+  LDA #<input
+  LDY #>input
+  LDX #<w3
+  JSR copyw2
+
+  LDA #1
+  STA dirty_input
+  JSR refresh_display
+
   RTS
 .endproc
 
@@ -872,8 +923,6 @@ inverse_hyperbolic_operation_per_index:
 .byte operations::asinh, operations::acosh, 0, 0, 0, 0, operations::add
 .byte operations::asech, operations::acsch, 0, 0, 0, 0, 0
 .byte operations::atanh, operations::acoth, 0, 0, 0, 0, 0
-
-hundred:   .byte $00,$02,$10,$00,$00,$00,$00,$00
 
 exp_sqr_buttons: ; 5x5
 .byte $02,$81,$82,$83,$02
